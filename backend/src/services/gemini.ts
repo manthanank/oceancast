@@ -1,13 +1,13 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 export class GeminiService {
-  private genAI: GoogleGenerativeAI | null = null;
-  private modelName = 'gemini-1.5-flash';
+  private genAI: GoogleGenAI | null = null;
+  private modelName = 'gemini-3.5-flash';
 
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey) {
-      this.genAI = new GoogleGenerativeAI(apiKey);
+      this.genAI = new GoogleGenAI({ apiKey });
     } else {
       console.warn('Warning: GEMINI_API_KEY is not defined in environment variables. Running in Mock/Demo mode.');
     }
@@ -24,8 +24,6 @@ export class GeminiService {
       if (!this.genAI) {
         return this.getMockResponse(message, weatherContext);
       }
-
-      const model = this.genAI.getGenerativeModel({ model: this.modelName });
 
       const prompt = `
 You are OceanCast AI, an expert marine, weather, and outdoor activity assistant.
@@ -47,8 +45,11 @@ INSTRUCTIONS:
 5. Suggest the best time or course of action based on the data.
 `;
 
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
+      const result = await this.genAI.models.generateContent({
+        model: this.modelName,
+        contents: prompt,
+      });
+      const text = result.text || '';
       return text.trim();
     } catch (error: any) {
       console.error('Gemini API call failed, falling back to mock:', error);
