@@ -1,0 +1,166 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none pb-20 md:pb-8">
+  <!-- HEADER -->
+  <header class="mb-8 border-b border-slate-800 pb-4">
+    <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">User Account</h1>
+    <p class="text-sm text-slate-400 mt-1">Manage your credentials, alert preferences, and account settings</p>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl">
+    
+    <!-- LEFT COLUMN: USER CARD & METRICS -->
+    <div class="lg:col-span-1 space-y-6">
+      <!-- USER AVATAR CARD -->
+      <div class="bg-slate-900/30 border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-col items-center text-center space-y-4">
+        <div class="h-24 w-24 bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 flex items-center justify-center font-black text-4xl rounded-full shadow-lg border-2 border-cyan-400/20 select-none">
+          {{ authService.currentUser()?.name?.charAt(0) || 'U' }}
+        </div>
+        
+        <div>
+          <h2 class="text-xl font-bold text-white leading-tight">{{ authService.currentUser()?.name }}</h2>
+          <span class="text-xs font-mono text-slate-400 mt-1 block">{{ authService.currentUser()?.email }}</span>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800/40 w-full flex justify-center space-x-2 text-[10px] uppercase font-bold tracking-wider">
+          <span class="px-2.5 py-1 rounded-full bg-slate-950 border border-slate-800 text-slate-350">
+            {{ authService.currentUser()?.role || 'standard' }}
+          </span>
+          <span class="px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            {{ authService.currentUser()?.role === 'admin' ? 'Unlimited' : 'Standard 5-Limit' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- METRICS & STATISTICS -->
+      <div class="bg-slate-900/30 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-5">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Account Statistics</h3>
+
+        <!-- Location Usage Progress Bar -->
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs select-none">
+            <span class="text-slate-400">Saved Locations:</span>
+            <span class="font-bold text-white font-mono">
+              {{ metrics()?.savedLocationsCount || 0 }} / {{ authService.currentUser()?.role === 'admin' ? '∞' : '5' }}
+            </span>
+          </div>
+          <div class="w-full bg-slate-950 border border-slate-850 h-3 rounded-full overflow-hidden p-[2px]">
+            @let count = metrics()?.savedLocationsCount || 0;
+            @let percent = authService.currentUser()?.role === 'admin' ? 100 : (count / 5) * 100;
+            <div
+              class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500"
+              [style.width.%]="percent"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Join Milestone counter -->
+        <div class="pt-4 border-t border-slate-800/45 flex items-center justify-between text-xs">
+          <span class="text-slate-400">Member Since:</span>
+          <span class="font-bold text-slate-200 font-mono">
+            {{ metrics()?.memberSince | date:'longDate' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: EDITOR & SETTINGS -->
+    <div class="lg:col-span-2 space-y-6">
+      
+      <!-- ACCOUNT CREDENTIALS FORM -->
+      <div class="bg-slate-900/30 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
+        <h3 class="text-md font-bold text-white">Update Account Credentials</h3>
+        
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Name Input -->
+            <div class="space-y-1">
+              <label for="prof-name" class="text-xs font-semibold uppercase tracking-wider text-slate-400">Display Name</label>
+              <input
+                id="prof-name"
+                type="text"
+                formControlName="name"
+                class="block w-full px-4 py-3 bg-slate-950/40 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 transition-colors text-sm"
+              />
+              @if (profileForm.get('name')?.invalid && profileForm.get('name')?.touched) {
+                <span class="text-[10px] font-bold text-rose-450">Please enter a valid display name</span>
+              }
+            </div>
+
+            <!-- Email Input -->
+            <div class="space-y-1">
+              <label for="prof-email" class="text-xs font-semibold uppercase tracking-wider text-slate-400">Email Address</label>
+              <input
+                id="prof-email"
+                type="email"
+                formControlName="email"
+                class="block w-full px-4 py-3 bg-slate-950/40 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 transition-colors text-sm font-mono"
+              />
+              @if (profileForm.get('email')?.invalid && profileForm.get('email')?.touched) {
+                <span class="text-[10px] font-bold text-rose-450">Please enter a valid email address</span>
+              }
+            </div>
+          </div>
+
+          <!-- NOTIFICATION ALERTS PREFERENCES -->
+          <div class="space-y-3 pt-4 border-t border-slate-800/40 select-none">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Personalized Alert Warnings</span>
+            
+            <div class="space-y-2.5">
+              <!-- Swell alerts checkbox -->
+              <div class="flex items-center space-x-3 cursor-pointer" (click)="swellWarnings.set(!swellWarnings())">
+                <input
+                  type="checkbox"
+                  [checked]="swellWarnings()"
+                  class="h-4 w-4 bg-slate-950 border border-slate-800 rounded text-cyan-400 focus:ring-0 focus:ring-offset-0 pointer-events-none"
+                />
+                <div class="text-xs">
+                  <span class="font-bold text-slate-200 block">Enable Marine Swell Alerts</span>
+                  <span class="text-[10px] text-slate-400">Warns you when coastal swell wave heights exceed dynamic surfing minimums.</span>
+                </div>
+              </div>
+
+              <!-- Wind alerts checkbox -->
+              <div class="flex items-center space-x-3 cursor-pointer" (click)="windWarnings.set(!windWarnings())">
+                <input
+                  type="checkbox"
+                  [checked]="windWarnings()"
+                  class="h-4 w-4 bg-slate-950 border border-slate-800 rounded text-cyan-400 focus:ring-0 focus:ring-offset-0 pointer-events-none"
+                />
+                <div class="text-xs">
+                  <span class="font-bold text-slate-200 block">Enable Gale & Crosswind Warnings</span>
+                  <span class="text-[10px] text-slate-400">Alerts you of gusty breezes when planning motorcycle touring index bounds.</span>
+                </div>
+              </div>
+
+              <!-- Solunar alerts checkbox -->
+              <div class="flex items-center space-x-3 cursor-pointer" (click)="solunarAlerts.set(!solunarAlerts())">
+                <input
+                  type="checkbox"
+                  [checked]="solunarAlerts()"
+                  class="h-4 w-4 bg-slate-950 border border-slate-800 rounded text-cyan-400 focus:ring-0 focus:ring-offset-0 pointer-events-none"
+                />
+                <div class="text-xs">
+                  <span class="font-bold text-slate-200 block">Enable Fisherman Feeding Forecasts</span>
+                  <span class="text-[10px] text-slate-400">Highlights solunar peak activity windows during local tide transitions.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBMIT ACTION -->
+          <div class="pt-4 border-t border-slate-800/40">
+            <button
+              type="submit"
+              [disabled]="isSaving() || profileForm.invalid"
+              class="px-6 py-3 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-bold rounded-xl text-xs transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              @if (isSaving()) { Saving... } @else { Save Profile Settings }
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+</div>

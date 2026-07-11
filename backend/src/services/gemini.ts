@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { Setting } from '../models/Setting';
 
 export class GeminiService {
   private genAI: GoogleGenAI | null = null;
@@ -25,9 +26,19 @@ export class GeminiService {
         return this.getMockResponse(message, weatherContext);
       }
 
+      // Query database for custom admin instructions
+      let systemPrompt = 'You are OceanCast AI, an expert marine, weather, and outdoor activity assistant. You are helping a user make decisions about outdoor activities (such as riding, surfing, fishing, photography, etc.) based on the following current weather and ocean conditions.';
+      try {
+        const promptSetting = await Setting.findOne({ key: 'gemini_system_prompt' });
+        if (promptSetting && typeof promptSetting.value === 'string' && promptSetting.value.trim() !== '') {
+          systemPrompt = promptSetting.value;
+        }
+      } catch (err) {
+        console.warn('Failed to query custom prompt setting, using default:', err);
+      }
+
       const prompt = `
-You are OceanCast AI, an expert marine, weather, and outdoor activity assistant.
-You are helping a user make decisions about outdoor activities (such as riding, surfing, fishing, photography, etc.) based on the following current weather and ocean conditions.
+${systemPrompt}
 
 ---
 CURRENT CONDITIONS CONTEXT:

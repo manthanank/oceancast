@@ -1,0 +1,123 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none pb-20 md:pb-8">
+  <!-- HEADER -->
+  <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Marine Wave Report</h1>
+      <p class="text-sm text-slate-400 mt-1">Ocean wave swell height, direction, and periods for {{ locationService.selectedLocation().name }}</p>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <app-spinner message="Loading detailed ocean wave swells..."></app-spinner>
+  } @else if (marineData()) {
+    <div class="space-y-6">
+      <!-- WAVE STATUS CARD -->
+      <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-lg grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="space-y-1">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Current Swell Height</span>
+          <div class="text-5xl font-black text-white leading-tight">
+            {{ marineData().current?.waveHeight ? marineData().current.waveHeight.toFixed(2) + 'm' : 'Flat' }}
+          </div>
+          <span class="text-sm font-semibold text-cyan-400">
+            {{ getWaveClassification(marineData().current?.waveHeight) }}
+          </span>
+        </div>
+
+        <div class="space-y-1 bg-slate-950/20 p-4 rounded-xl border border-slate-850">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Wave Swell Period</span>
+          <div class="text-lg font-bold text-white">
+            {{ marineData().current?.wavePeriod ? marineData().current.wavePeriod + ' sec' : 'N/A' }}
+          </div>
+          <span class="text-xs text-slate-400">Time between wave crests</span>
+        </div>
+
+        <div class="space-y-1 bg-slate-950/20 p-4 rounded-xl border border-slate-850">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500 font-sans">Swell Direction</span>
+          <div class="text-lg font-bold text-white flex items-center space-x-2">
+            <span>{{ marineData().current?.waveDirection ? marineData().current.waveDirection + '°' : 'N/A' }}</span>
+            @if (marineData().current?.waveDirection !== undefined) {
+              <!-- Swell Heading Indicator Arrow -->
+              <span class="inline-block transition-transform duration-500" [style.transform]="'rotate(' + marineData().current.waveDirection + 'deg)'">
+                ↑
+              </span>
+            }
+          </div>
+          <span class="text-xs text-slate-400">Compass heading of incoming waves</span>
+        </div>
+
+        <!-- Surf Advice -->
+        @let h = marineData().current?.waveHeight || 0;
+        @let p = marineData().current?.wavePeriod || 0;
+        <div class="space-y-1 bg-slate-950/20 p-4 rounded-xl border border-slate-850">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Surf Suitability</span>
+          <div class="text-md font-bold text-white mt-1">
+            @if (h === 0) {
+              Flat / Unsurfable
+            } @else if (h >= 1.0 && p >= 8) {
+              Clean Surfable Waves
+            } @else if (h >= 0.5) {
+              Short/Messy Swells
+            } @else {
+              Flat (Too Small)
+            }
+          </div>
+          <span class="text-xs text-slate-400">Based on swell size & period</span>
+        </div>
+      </div>
+
+      <!-- HOURLY WAVE DETAILS TABLE -->
+      <div class="bg-slate-900/20 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+        <div class="p-4 bg-slate-950/40 border-b border-slate-800 flex justify-between items-center select-none">
+          <span class="text-sm font-bold text-white">24-Hour Wave Forecast</span>
+          <span class="text-xs text-slate-400">Sorted by hourly increments</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-950/20 border-b border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400 select-none">
+                <th class="py-4 px-6">Time</th>
+                <th class="py-4 px-6">Swell Height</th>
+                <th class="py-4 px-6">Wave Period</th>
+                <th class="py-4 px-6">Swell Direction</th>
+                <th class="py-4 px-6">Classification</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/40">
+              @for (hour of marineData().hourly; track hour.time) {
+                <tr class="hover:bg-slate-900/30 transition-colors">
+                  <td class="py-3.5 px-6 font-medium text-slate-350">
+                    {{ formatTime(hour.time) }}
+                  </td>
+                  <td class="py-3.5 px-6 text-white font-bold font-mono">
+                    {{ hour.waveHeight > 0 ? hour.waveHeight.toFixed(2) + 'm' : 'Flat' }}
+                  </td>
+                  <td class="py-3.5 px-6 text-slate-300 font-mono">
+                    {{ hour.wavePeriod > 0 ? hour.wavePeriod + 's' : '-' }}
+                  </td>
+                  <td class="py-3.5 px-6 text-slate-350 font-mono">
+                    @if (hour.waveHeight > 0) {
+                      <div class="flex items-center space-x-1.5">
+                        <span>{{ hour.waveDirection }}°</span>
+                        <span class="inline-block" [style.transform]="'rotate(' + hour.waveDirection + 'deg)'">↑</span>
+                      </div>
+                    } @else {
+                      -
+                    }
+                  </td>
+                  <td class="py-3.5 px-6 text-xs font-medium text-slate-400">
+                    {{ getWaveClassification(hour.waveHeight) }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="text-center py-20">
+      <p class="text-slate-500">No marine wave forecast available. This location might be land-locked.</p>
+    </div>
+  }
+</div>

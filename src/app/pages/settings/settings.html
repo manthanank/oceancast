@@ -1,0 +1,74 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none">
+  <!-- HEADER -->
+  <header class="mb-8 border-b border-slate-800 pb-4">
+    <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Preferences</h1>
+    <p class="text-sm text-slate-400 mt-1">Configure your metrics unit representation</p>
+  </header>
+
+  <div class="max-w-2xl bg-slate-900/30 border border-slate-800/80 p-8 rounded-2xl shadow-xl space-y-6">
+    <!-- TEMPERATURE UNIT SECTION -->
+    <div class="flex items-center justify-between pb-6 border-b border-slate-800/40">
+      <div>
+        <h3 class="text-md font-bold text-white">Temperature Scale</h3>
+        <p class="text-xs text-slate-400">Display air and sea temperature in your preferred metric</p>
+      </div>
+      <div class="flex bg-slate-950 border border-slate-800 rounded-xl p-1 select-none">
+        <button
+          (click)="changeTempUnit('C')"
+          class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
+          [class.bg-cyan-500]="settingsService.settings().tempUnit === 'C'"
+          [class.text-slate-950]="settingsService.settings().tempUnit === 'C'"
+          [class.text-slate-400]="settingsService.settings().tempUnit !== 'C'"
+        >
+          Celsius (°C)
+        </button>
+        <button
+          (click)="changeTempUnit('F')"
+          class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
+          [class.bg-cyan-500]="settingsService.settings().tempUnit === 'F'"
+          [class.text-slate-950]="settingsService.settings().tempUnit === 'F'"
+          [class.text-slate-400]="settingsService.settings().tempUnit !== 'F'"
+        >
+          Fahrenheit (°F)
+        </button>
+      </div>
+    </div>
+
+    <!-- WIND SPEED UNIT SECTION -->
+    <div class="flex items-center justify-between pb-6 border-b border-slate-800/40">
+      <div>
+        <h3 class="text-md font-bold text-white">Wind Speed Metrics</h3>
+        <p class="text-xs text-slate-400">Select measuring index units for wind reports</p>
+      </div>
+      <div class="flex bg-slate-950 border border-slate-800 rounded-xl p-1 select-none">
+        <button
+          (click)="changeWindUnit('kmh')"
+          class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
+          [class.bg-cyan-500]="settingsService.settings().windUnit === 'kmh'"
+          [class.text-slate-950]="settingsService.settings().windUnit === 'kmh'"
+          [class.text-slate-400]="settingsService.settings().windUnit !== 'kmh'"
+        >
+          km/h
+        </button>
+        <button
+          (click)="changeWindUnit('ms')"
+          class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
+          [class.bg-cyan-500]="settingsService.settings().windUnit === 'ms'"
+          [class.text-slate-950]="settingsService.settings().windUnit === 'ms'"
+          [class.text-slate-400]="settingsService.settings().windUnit !== 'ms'"
+        >
+          m/s
+        </button>
+        <button
+          (click)="changeWindUnit('kt')"
+          class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
+          [class.bg-cyan-500]="settingsService.settings().windUnit === 'kt'"
+          [class.text-slate-950]="settingsService.settings().windUnit === 'kt'"
+          [class.text-slate-400]="settingsService.settings().windUnit !== 'kt'"
+        >
+          Knots (kt)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

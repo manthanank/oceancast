@@ -1,59 +1,100 @@
-# Oceancast
+# 🌊 OceanCast
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.18.
+A full-stack marine weather intelligence platform for fishermen, surfers, and coastal enthusiasts. Combines real-time weather, ocean swell, astronomical tide curves, and Gemini AI planning into a single unified dashboard.
 
-## Development server
+---
 
-To start a local development server, run:
+## ✨ Features
 
+- **Marine Dashboard** — Live weather, swell height, wind speed/direction, wave period
+- **Harmonic Tide Predictor** — Interactive SVG tide curve with hourly scrubber slider
+- **Gemini AI Assistant** — Natural language marine condition summaries and trip planning
+- **Fisherman Advisory** — Traffic-light safety indicators (🟢🟡🔴) with plain-language advice
+- **Guest Access Mode** — One-click entry with no registration required
+- **One-Tap Spot Switcher** — Quick preset location tiles on the dashboard
+- **Admin Console** — User management, broadcast announcements, thresholds, audit logs, backup/restore
+- **User Profile** — Alert preferences, saved locations gauge, account metrics
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Angular 21, Tailwind CSS v4 |
+| Backend | Node.js, Express, TypeScript |
+| Database | MongoDB (Mongoose) |
+| AI | Google Gemini API |
+| Auth | JWT (7-day expiry) |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 20+
+- MongoDB (local or Atlas)
+- Google Gemini API key ([get one here](https://aistudio.google.com))
+
+### 1. Clone the repository
 ```bash
-ng serve
+git clone https://github.com/your-username/oceancast.git
+cd oceancast
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
+### 2. Setup the backend
 ```bash
-ng generate component component-name
+cd backend
+cp .env.example .env       # Fill in your MongoDB URI, JWT secret, Gemini key
+npm install
+npm run dev                # Starts backend on http://localhost:5000
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
+### 3. Setup the frontend
 ```bash
-ng generate --help
+cd ..                      # Back to project root
+npm install
+npm start                  # Starts frontend on http://localhost:4200
 ```
 
-## Building
-
-To build the project run:
-
+### 4. Create your first admin account
+Register via the UI, then run:
 ```bash
-ng build
+cd backend
+node scripts/make_admin.js your@email.com
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+---
 
-## Running unit tests
+## 📁 Project Structure
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
+```
+oceancast/
+├── backend/               # Express + TypeScript API server
+│   ├── src/
+│   │   ├── models/        # Mongoose schemas (User, Location, Setting, AuditLog)
+│   │   ├── routes/        # REST endpoints (auth, admin, locations, weather…)
+│   │   ├── middleware/    # JWT auth, admin guard
+│   │   └── services/      # Gemini AI, audit logging
+│   └── .env.example       # Environment variable template
+│
+└── src/                   # Angular 21 frontend
+    └── app/
+        ├── pages/         # Dashboard, Tides, Marine, Weather, AI Chat, Admin, Profile…
+        ├── services/      # AuthService, SettingsService, LocationService, ToastService
+        ├── components/    # Navbar, Spinner, Toast
+        ├── guards/        # Auth route guard
+        └── interceptors/  # JWT HTTP interceptor
 ```
 
-## Running end-to-end tests
+---
 
-For end-to-end (e2e) testing, run:
+## 🔐 Environment Variables
 
-```bash
-ng e2e
-```
+See [`backend/.env.example`](./backend/.env.example) for all required variables.
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+---
 
-## Additional Resources
+## 📄 License
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+MIT

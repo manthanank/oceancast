@@ -16,6 +16,7 @@ import tidesRoutes from './routes/tides';
 import dashboardRoutes from './routes/dashboard';
 import aiRoutes from './routes/ai';
 import healthRoutes from './routes/health';
+import adminRoutes from './routes/admin';
 
 const app = express();
 
@@ -67,6 +68,7 @@ app.use('/api/tides', tidesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Root route
 app.get('/', (req: Request, res: Response) => {

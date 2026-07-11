@@ -1,0 +1,173 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none pb-20 md:pb-8">
+  <!-- HEADER -->
+  <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Weather Forecast</h1>
+      <p class="text-sm text-slate-400 mt-1">Detailed hourly and daily weather metrics for {{ locationService.selectedLocation().name }}</p>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <app-spinner message="Loading detailed weather report..."></app-spinner>
+  } @else if (weatherData()) {
+    <div class="space-y-6">
+      <!-- CURRENT DETAILED METRICS CARD -->
+      <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-lg grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="space-y-1">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Current Temperature</span>
+          <div class="text-5xl font-black text-white leading-tight">
+            {{ settingsService.formatTemp(weatherData().current?.temp) }}
+          </div>
+          <span class="text-sm font-semibold text-cyan-400">
+            {{ getWeatherDescription(weatherData().current?.weatherCode) }}
+          </span>
+        </div>
+
+        <div class="space-y-1 bg-slate-950/20 p-4 rounded-xl border border-slate-850">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Wind Dynamics</span>
+          <div class="text-lg font-bold text-white">
+            {{ settingsService.formatWind(weatherData().current?.windSpeed) }}
+          </div>
+          <span class="text-xs text-slate-400">Heading: {{ weatherData().current?.windDirection }}°</span>
+        </div>
+
+        <div class="space-y-1 bg-slate-950/20 p-4 rounded-xl border border-slate-850">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Daily Humidity</span>
+          <div class="text-lg font-bold text-white">
+            {{ weatherData().current?.humidity }}%
+          </div>
+          <span class="text-xs text-slate-400">Ambient relative humidity</span>
+        </div>
+
+        <div class="space-y-1 bg-slate-950/20 p-4 rounded-xl border border-slate-850">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Solar Schedule</span>
+          <div class="text-[10px] space-y-1.5 mt-2 text-slate-300 font-semibold leading-relaxed">
+            <div class="flex items-center justify-between">
+              <span class="flex items-center space-x-1"><span>🌅</span> <span>Sunrise:</span></span>
+              <span class="font-mono text-slate-100">{{ formatTime(weatherData().daily[0]?.sunrise) }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="flex items-center space-x-1"><span>🌇</span> <span>Sunset:</span></span>
+              <span class="font-mono text-slate-100">{{ formatTime(weatherData().daily[0]?.sunset) }}</span>
+            </div>
+            <div class="flex items-center justify-between border-t border-slate-800/40 pt-1.5">
+              <span class="flex items-center space-x-1 text-amber-400"><span>☀️</span> <span>Golden Hour (AM):</span></span>
+              <span class="font-mono text-amber-400">{{ morningGoldenHour() }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="flex items-center space-x-1 text-orange-400"><span>☀️</span> <span>Golden Hour (PM):</span></span>
+              <span class="font-mono text-orange-400">{{ eveningGoldenHour() }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="flex items-center space-x-1 text-cyan-400"><span>⏱️</span> <span>Solar Noon Peak:</span></span>
+              <span class="font-mono text-cyan-400">{{ solarNoon() }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS SELECTOR -->
+      <div class="flex border-b border-slate-800">
+        <button
+          (click)="setTab('hourly')"
+          class="px-6 py-3 border-b-2 text-sm font-bold transition-all focus:outline-none"
+          [class.border-cyan-400]="activeTab() === 'hourly'"
+          [class.text-cyan-400]="activeTab() === 'hourly'"
+          [class.border-transparent]="activeTab() !== 'hourly'"
+          [class.text-slate-400]="activeTab() !== 'hourly'"
+        >
+          Hourly Forecast (24h)
+        </button>
+        <button
+          (click)="setTab('daily')"
+          class="px-6 py-3 border-b-2 text-sm font-bold transition-all focus:outline-none"
+          [class.border-cyan-400]="activeTab() === 'daily'"
+          [class.text-cyan-400]="activeTab() === 'daily'"
+          [class.border-transparent]="activeTab() !== 'daily'"
+          [class.text-slate-400]="activeTab() !== 'daily'"
+        >
+          7-Day Forecast
+        </button>
+      </div>
+
+      <!-- HOURLY FORECAST LIST -->
+      @if (activeTab() === 'hourly') {
+        <div class="bg-slate-900/20 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-slate-950/60 border-b border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400 select-none">
+                  <th class="py-4 px-6">Time</th>
+                  <th class="py-4 px-6">Temp</th>
+                  <th class="py-4 px-6">Condition</th>
+                  <th class="py-4 px-6">Wind</th>
+                  <th class="py-4 px-6">Rain Prob</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/40">
+                @for (hour of weatherData().hourly; track hour.time) {
+                  <tr class="hover:bg-slate-900/30 transition-colors">
+                    <td class="py-3.5 px-6 font-medium text-slate-300">
+                      {{ formatTime(hour.time) }}
+                    </td>
+                    <td class="py-3.5 px-6 text-white font-bold font-mono">
+                      {{ settingsService.formatTemp(hour.temp) }}
+                    </td>
+                    <td class="py-3.5 px-6 text-slate-350 font-semibold">
+                      {{ getWeatherDescription(hour.weatherCode) }}
+                    </td>
+                    <td class="py-3.5 px-6 text-slate-350 font-mono">
+                      {{ settingsService.formatWind(hour.windSpeed) }}
+                    </td>
+                    <td class="py-3.5 px-6 font-semibold font-mono" [class.text-cyan-400]="hour.precipProb > 30" [class.text-slate-400]="hour.precipProb <= 30">
+                      {{ hour.precipProb }}%
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      } @else {
+        <!-- 7-DAY FORECAST CARDS -->
+        <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+          @for (day of weatherData().daily; track day.date) {
+            <div class="bg-slate-900/30 border border-slate-850 p-5 rounded-2xl flex flex-col items-center justify-between text-center space-y-4 hover:border-slate-700 transition-colors">
+              <div class="select-none">
+                <span class="block font-bold text-white text-md">{{ day.dayName }}</span>
+                <span class="block text-xs text-slate-500 font-semibold">{{ day.dayNum }}</span>
+              </div>
+
+              <!-- Weather SVG loader visual -->
+              <div class="p-2.5 bg-cyan-500/10 text-cyan-400 rounded-xl">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1" />
+                </svg>
+              </div>
+
+              <div class="space-y-1">
+                <span class="block text-xs font-semibold text-slate-350">
+                  {{ getWeatherDescription(day.weatherCode) }}
+                </span>
+                <div class="text-sm font-bold font-mono space-x-2 text-white">
+                  <span>{{ settingsService.formatTemp(day.tempMax) }}</span>
+                  <span class="text-xs text-slate-500 font-medium font-sans">/</span>
+                  <span class="text-xs text-slate-400">{{ settingsService.formatTemp(day.tempMin) }}</span>
+                </div>
+              </div>
+
+              <div class="text-[10px] text-slate-400 font-bold font-mono w-full border-t border-slate-800/40 pt-2 flex justify-center items-center space-x-1">
+                <span>💧</span>
+                <span>{{ day.precipitationSum?.toFixed(1) || '0.0' }} mm</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="text-center py-20">
+      <p class="text-slate-500">No weather forecast available.</p>
+    </div>
+  }
+</div>

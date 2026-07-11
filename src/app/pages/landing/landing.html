@@ -1,0 +1,75 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 relative overflow-hidden select-none flex flex-col justify-between">
+  <!-- Decorative background glows -->
+  <div class="absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-cyan-500/10 blur-[130px] pointer-events-none"></div>
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-blue-500/5 blur-[150px] pointer-events-none"></div>
+
+  <!-- HERO SECTION -->
+  <div class="max-w-6xl mx-auto px-6 py-20 text-center space-y-12 relative z-10 flex-1 flex flex-col justify-center">
+    <!-- Branding Badge -->
+    <div class="flex justify-center">
+      <span class="inline-flex items-center space-x-1 px-3 py-1 bg-cyan-500/10 border border-cyan-400/20 text-cyan-400 rounded-full text-xs font-semibold tracking-wide">
+        <span>✨</span>
+        <span>Introducing OceanCast v1.0</span>
+      </span>
+    </div>
+
+    <!-- Main Headings -->
+    <div class="space-y-4 max-w-4xl mx-auto">
+      <h1 class="text-4xl md:text-6xl font-black tracking-tight text-white leading-none">
+        Sail, Ride, and Fish with <br class="hidden md:inline" />
+        <span class="bg-gradient-to-r from-cyan-400 via-teal-400 to-blue-500 bg-clip-text text-transparent">Absolute Certainty</span>
+      </h1>
+      <p class="text-md md:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed pt-2">
+        Monitor real-time marine weather, swell wave height vectors, and astronomical tides harmonics, enhanced by Gemini AI contextual outdoor route feasibility planning.
+      </p>
+    </div>
+
+    <!-- Call to Actions -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <button (click)="loginAsGuest()" class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-bold rounded-xl text-md transition-all shadow-lg hover:from-cyan-300 hover:to-blue-400 active:scale-98">
+        🎣 Enter as Guest Fisherman
+      </button>
+      <a routerLink="/register" class="w-full sm:w-auto px-8 py-4 bg-slate-900/60 border border-slate-800 rounded-xl text-md font-bold text-white hover:bg-slate-850 hover:border-slate-700 transition-colors">
+        Create Account
+      </a>
+      <a routerLink="/login" class="w-full sm:w-auto px-8 py-4 bg-slate-900/65 border border-slate-800/80 rounded-xl text-md font-bold text-slate-350 hover:bg-slate-850 hover:text-white transition-colors">
+        Log In
+      </a>
+    </div>
+
+    <!-- CORE FEATURES GRID -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 max-w-5xl mx-auto text-left">
+      <!-- Feature 1 -->
+      <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl space-y-3 hover:border-slate-700/60 transition-colors">
+        <div class="h-10 w-10 bg-cyan-500/10 text-cyan-400 flex items-center justify-center rounded-xl font-bold">🌊</div>
+        <h3 class="text-md font-bold text-white">Marine Swell Forecaster</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Access wave swell heights, heading compass directions, and wave periods mapped to identify surfing breaks and choppy waters.
+        </p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl space-y-3 hover:border-slate-700/60 transition-colors">
+        <div class="h-10 w-10 bg-emerald-500/10 text-emerald-400 flex items-center justify-center rounded-xl font-bold">📊</div>
+        <h3 class="text-md font-bold text-white">Harmonic Tides Predictor</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Review daily low/high tide events and interactive vector tide curves simulated deterministically from global coordinates.
+        </p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl space-y-3 hover:border-slate-700/60 transition-colors">
+        <div class="h-10 w-10 bg-purple-500/10 text-purple-400 flex items-center justify-center rounded-xl font-bold">🤖</div>
+        <h3 class="text-md font-bold text-white">Gemini AI Assistant</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Consult our context-aware chatbot for custom weather reports, motorcycle road route advice, and tide-timed fishing windows.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="py-6 border-t border-slate-900 text-center text-xs text-slate-600 relative z-10">
+    <p>&copy; 2026 OceanCast. All rights reserved. Powered by Gemini 3.5 Flash.</p>
+  </footer>
+</div>

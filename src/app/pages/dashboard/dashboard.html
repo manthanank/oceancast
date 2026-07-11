@@ -1,0 +1,427 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none pb-20 md:pb-8">
+  <!-- HEADER -->
+  <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Marine & Weather Dashboard</h1>
+      <p class="text-sm text-slate-400 mt-1">Unified ocean overview for your active destination</p>
+    </div>
+    
+    <!-- Location quick display -->
+    <div class="flex items-center justify-between md:justify-end bg-slate-900/60 border border-slate-800 px-4 py-2.5 rounded-xl text-xs gap-3">
+      <div class="flex items-center space-x-2">
+        <svg class="h-4 w-4 text-cyan-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+        </svg>
+        <span class="text-slate-200 font-bold">{{ locationService.selectedLocation().name }}</span>
+      </div>
+      <a routerLink="/locations" class="text-cyan-400 hover:text-cyan-300 font-semibold border-l border-slate-800 pl-3 transition-colors">Change</a>
+    </div>
+  </header>
+
+  <!-- DYNAMIC SAFETY ALERTS BANNER -->
+  @if (!isLoading() && safetyAlerts().length > 0) {
+    <div class="mb-6 space-y-2.5 max-w-5xl">
+      @for (alert of safetyAlerts(); track alert) {
+        <div class="flex items-center space-x-3 px-4 py-3 bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-xl text-xs font-semibold">
+          <span>{{ alert }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- LOADING STATE -->
+  @if (isLoading()) {
+    <div class="py-20">
+      <app-spinner message="Aggregating weather, marine, and tide metrics..."></app-spinner>
+    </div>
+  } @else if (loadError()) {
+    <!-- ERROR STATE -->
+    <div class="flex flex-col items-center justify-center p-12 bg-rose-950/20 border border-rose-500/20 rounded-2xl text-center max-w-lg mx-auto space-y-4">
+      <svg class="h-12 w-12 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <div>
+        <h3 class="text-lg font-bold text-white">Metrics Unreachable</h3>
+        <p class="text-sm text-rose-300/80 mt-1">{{ loadError() }}</p>
+      </div>
+      <button (click)="loadDashboardData(locationService.selectedLocation().lat, locationService.selectedLocation().lon)" class="px-5 py-2 bg-rose-500 text-slate-950 font-bold rounded-xl hover:bg-rose-400 transition-colors">
+        Try Again
+      </button>
+    </div>
+  } @else if (dashboardData()) {
+    <!-- DASHBOARD CONTENT -->
+    <div class="space-y-8">
+      
+      <!-- GUEST/FISHERMAN QUICK SCENARIO OVERVIEW -->
+      <div class="bg-slate-900/30 border border-slate-800 p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 max-w-5xl animate-fade-in">
+        <!-- Traffic Light Indicator -->
+        <div class="flex items-center space-x-3.5 shrink-0 select-none">
+          @let w = dashboardData().marine?.current?.waveHeight || 0;
+          @let s = dashboardData().weather?.current?.windSpeed || 0;
+          @if (w < thresholds().fish.waveMax && s < thresholds().fish.windMax) {
+            <div class="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-xl text-slate-950 font-black animate-pulse">🟢</div>
+            <div>
+              <span class="block text-[10px] uppercase font-bold text-slate-500 tracking-wider">Fishing Advisory</span>
+              <span class="block text-md font-extrabold text-emerald-400">🟢 EXCELLENT GO-FISHING</span>
+            </div>
+          } @else if (w > thresholds().fish.waveMax * 1.5 || s > thresholds().fish.windMax * 1.5) {
+            <div class="h-10 w-10 rounded-full bg-rose-500 flex items-center justify-center text-xl text-slate-950 font-black">🔴</div>
+            <div>
+              <span class="block text-[10px] uppercase font-bold text-slate-500 tracking-wider">Fishing Advisory</span>
+              <span class="block text-md font-extrabold text-rose-400">🔴 ROUGH SEAS - STAY HOME</span>
+            </div>
+          } @else {
+            <div class="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-xl text-slate-950 font-black">🟡</div>
+            <div>
+              <span class="block text-[10px] uppercase font-bold text-slate-500 tracking-wider">Fishing Advisory</span>
+              <span class="block text-md font-extrabold text-amber-400">🟡 CAUTION ADVISED</span>
+            </div>
+          }
+        </div>
+
+        <!-- AI Normal-Language Explanation -->
+        <div class="flex-1 md:border-l border-slate-800 md:pl-5 text-xs text-slate-300 leading-relaxed font-medium">
+          <span class="text-cyan-400 font-bold block mb-0.5">🐟 OceanCast Fisherman Advice:</span>
+          @if (w < thresholds().fish.waveMax && s < thresholds().fish.windMax) {
+            Perfect calm waters ({{ w.toFixed(1) }}m swell) and quiet winds ({{ s.toFixed(0) }} km/h). Fish will feed heavily during upcoming tide shifts. Get your rods ready!
+          } @else if (w > thresholds().fish.waveMax * 1.5 || s > thresholds().fish.windMax * 1.5) {
+            Hazardous high waves ({{ w.toFixed(1) }}m swell) and strong winds ({{ s.toFixed(0) }} km/h). Severe offshore waves make fishing from boat unsafe today.
+          } @else {
+            Moderate swell ({{ w.toFixed(1) }}m) and breeze ({{ s.toFixed(0) }} km/h). Conditions are manageable; pier or harbor casting is highly recommended over small craft.
+          }
+        </div>
+      </div>
+
+      <!-- ONE-TAP QUICK FISHING SPOTS SELECTOR -->
+      @if (presets().length > 0) {
+        <div class="max-w-5xl space-y-2 select-none animate-fade-in">
+          <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">One-Tap Quick Fishing Spot Switcher</span>
+          <div class="flex flex-wrap gap-2.5">
+            @for (preset of presets(); track preset.name) {
+              <button
+                type="button"
+                (click)="selectPresetLocation(preset)"
+                class="px-3.5 py-2 bg-slate-900/60 border border-slate-800 rounded-xl text-xs font-semibold text-slate-350 hover:text-white hover:border-cyan-400/40 hover:bg-slate-850 active:scale-97 transition-all flex items-center space-x-1.5"
+              >
+                <span>📍</span>
+                <span>{{ preset.name }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- DYNAMIC CARD GRID -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- 1. WEATHER SUMMARY CARD -->
+        @let weatherCode = dashboardData().weather?.current?.weatherCode || 0;
+        <div class="p-6 rounded-2xl shadow-xl flex flex-col justify-between hover:border-slate-700/60 transition-all duration-500 relative overflow-hidden border" [class]="getWeatherBgClass(weatherCode)">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Weather Forecast</span>
+              <!-- Weather SVG Icon -->
+              <div class="p-2 bg-yellow-500/10 text-yellow-400 rounded-xl">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <div class="text-4xl font-black text-white tracking-tight">{{ currentTemp() }}</div>
+              <div class="text-sm font-semibold text-slate-200">
+                {{ getWeatherDescription(dashboardData().weather?.current?.weatherCode) }}
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-800/40 text-xs items-center">
+              <div class="flex items-center space-x-2.5">
+                <!-- Rotating SVG Compass Dial -->
+                @let windDir = dashboardData().weather?.current?.windDirection || 0;
+                <div class="relative w-8 h-8 flex items-center justify-center bg-slate-950/80 rounded-full border border-slate-800 shrink-0 select-none">
+                  <span class="text-[6px] font-bold text-slate-500 absolute top-0.5">N</span>
+                  <svg class="w-3.5 h-3.5 text-cyan-400 transition-transform duration-500" [style.transform]="'rotate(' + windDir + 'deg)'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-4 4m4-4l4 4" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="text-slate-500 block uppercase font-bold tracking-wider">Wind</span>
+                  <span class="text-slate-300 font-semibold font-mono">{{ currentWind() }} ({{ windDir }}°)</span>
+                </div>
+              </div>
+              <div>
+                <span class="text-slate-500 block uppercase font-bold tracking-wider">Humidity</span>
+                <span class="text-slate-300 font-semibold font-mono">{{ dashboardData().weather?.current?.humidity }}%</span>
+              </div>
+            </div>
+          </div>
+
+          <a routerLink="/weather" class="mt-6 flex items-center justify-center space-x-2 py-2 border border-slate-800 hover:border-slate-700 text-xs font-bold text-cyan-400 rounded-xl hover:bg-slate-900/40 transition-colors">
+            <span>Detailed Forecast</span>
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+
+        <!-- 2. MARINE CONDITIONS CARD -->
+        <div class="bg-slate-900/35 border border-slate-800/80 p-6 rounded-2xl shadow-xl flex flex-col justify-between hover:border-slate-700/60 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Wave swell</span>
+              <div class="p-2 bg-blue-500/10 text-cyan-400 rounded-xl">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <div class="text-4xl font-black text-white tracking-tight">{{ currentSwelledWave() }}</div>
+              <div class="text-sm font-semibold text-slate-200">
+                Swell Height
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-800/40 text-xs items-center">
+              <div>
+                <span class="text-slate-500 block uppercase font-bold tracking-wider">Period</span>
+                <span class="text-slate-300 font-semibold font-mono">{{ dashboardData().marine?.current?.wavePeriod ? dashboardData().marine.current.wavePeriod + 's' : 'N/A' }}</span>
+              </div>
+              <div class="flex items-center space-x-2.5">
+                <!-- Rotating SVG Compass Dial -->
+                @let waveDir = dashboardData().marine?.current?.waveDirection || 0;
+                <div class="relative w-8 h-8 flex items-center justify-center bg-slate-950/80 rounded-full border border-slate-800 shrink-0 select-none">
+                  <span class="text-[6px] font-bold text-slate-500 absolute top-0.5">N</span>
+                  <svg class="w-3.5 h-3.5 text-cyan-400 transition-transform duration-500" [style.transform]="'rotate(' + waveDir + 'deg)'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-4 4m4-4l4 4" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="text-slate-500 block uppercase font-bold tracking-wider">Direction</span>
+                  <span class="text-slate-300 font-semibold font-mono">{{ waveDir }}°</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <a routerLink="/marine" class="mt-6 flex items-center justify-center space-x-2 py-2 border border-slate-800 hover:border-slate-700 text-xs font-bold text-cyan-400 rounded-xl hover:bg-slate-900/40 transition-colors">
+            <span>Detailed Surf Reports</span>
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+
+        <!-- 3. TIDES PREDICTION CARD -->
+        <div class="bg-slate-900/35 border border-slate-800/80 p-6 rounded-2xl shadow-xl flex flex-col justify-between hover:border-slate-700/60 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Tide Cycles</span>
+              <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </div>
+            </div>
+
+            @if (nextTide()) {
+              <div class="space-y-1">
+                <div class="text-3xl font-black text-white tracking-tight flex items-baseline">
+                  <span>{{ nextTide().height }}m</span>
+                  <span class="text-xs text-slate-400 font-medium ml-2 uppercase">Height</span>
+                </div>
+                <div class="text-sm font-semibold text-slate-200">
+                  Next: {{ nextTide().type }} Tide at {{ nextTide().time.split('T')[1] || nextTide().time }}
+                </div>
+              </div>
+            } @else {
+              <div class="text-sm text-slate-400">No tide events generated</div>
+            }
+
+            <div class="mt-6 pt-4 border-t border-slate-800/40 text-xs">
+              <span class="text-slate-500 block uppercase font-bold tracking-wider mb-2">Today's Extremes</span>
+              <div class="flex space-x-4">
+                @for (evt of dashboardData().tides?.extremes?.slice(0, 2); track evt.time) {
+                  <div class="flex items-center space-x-1.5">
+                    <span class="h-2 w-2 rounded-full" [class.bg-cyan-400]="evt.type === 'High'" [class.bg-emerald-400]="evt.type === 'Low'"></span>
+                    <span class="text-slate-350">{{ evt.type }}: {{ evt.height }}m</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <a routerLink="/tides" class="mt-6 flex items-center justify-center space-x-2 py-2 border border-slate-800 hover:border-slate-700 text-xs font-bold text-cyan-400 rounded-xl hover:bg-slate-900/40 transition-colors">
+            <span>Tides Schedule Curve</span>
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- OUTDOOR ACTIVITY INDICES (SMART ADVICE) -->
+      <section class="bg-slate-900/20 border border-slate-800/60 p-6 rounded-2xl shadow-xl">
+        <h2 class="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+          <svg class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span>Activity Feasibility Guides</span>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- SURFING INDEX -->
+          @let wave = dashboardData().marine?.current?.waveHeight || 0;
+          @let wind = dashboardData().weather?.current?.windSpeed || 0;
+          @let temp = dashboardData().weather?.current?.temp || 0;
+          <div class="p-4 rounded-xl border border-slate-800/40 bg-slate-950/20">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-slate-300">🏄 Surfing Conditions</span>
+              @if (wave >= thresholds().surf.waveMin && wind < thresholds().surf.windMax) {
+                <span class="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg">Favorable</span>
+              } @else {
+                <span class="px-2 py-0.5 text-[10px] font-extrabold bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg">Poor</span>
+              }
+            </div>
+            <p class="text-xs text-slate-400">
+              @if (wave >= thresholds().surf.waveMin && wind < thresholds().surf.windMax) {
+                Healthy wave swell ({{ wave.toFixed(1) }}m) and low crosswinds ({{ wind.toFixed(0) }} km/h). Ideal for heading out!
+              } @else {
+                Waves are flat ({{ wave.toFixed(1) }}m) or winds are choppy ({{ wind.toFixed(0) }} km/h). Not ideal for surfing swells.
+              }
+            </p>
+
+            <button type="button" (click)="showSurfBreakdown.set(!showSurfBreakdown())" class="mt-3 w-full flex items-center justify-between text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors focus:outline-none">
+              <span>{{ showSurfBreakdown() ? 'Hide' : 'Show' }} Parameters Breakdown</span>
+              <svg class="h-3 w-3 transform transition-transform duration-200" [class.rotate-90]="showSurfBreakdown()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            @if (showSurfBreakdown()) {
+              <ul class="mt-2.5 pt-2.5 border-t border-slate-800/40 text-[10px] text-slate-400 space-y-1 font-mono">
+                <li class="flex justify-between"><span>Swell Wave Height:</span> <span [class.text-emerald-400]="wave >= thresholds().surf.waveMin" [class.text-rose-400]="wave < thresholds().surf.waveMin">{{ wave.toFixed(1) }}m (Min: {{ thresholds().surf.waveMin }}m)</span></li>
+                <li class="flex justify-between"><span>Surface Wind Speed:</span> <span [class.text-emerald-400]="wind < thresholds().surf.windMax" [class.text-rose-400]="wind >= thresholds().surf.windMax">{{ wind.toFixed(0) }} km/h (Max: {{ thresholds().surf.windMax }}km/h)</span></li>
+                <li class="flex justify-between"><span>Avg Air Temp:</span> <span class="text-cyan-400">{{ temp.toFixed(0) }}°C</span></li>
+              </ul>
+            }
+          </div>
+
+          <!-- RIDING INDEX -->
+          <div class="p-4 rounded-xl border border-slate-800/40 bg-slate-950/20">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-slate-300">🏍 Motorcycle Riding</span>
+              @if (wind < thresholds().ride.windMax && temp >= thresholds().ride.tempMin) {
+                <span class="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg">Favorable</span>
+              } @else {
+                <span class="px-2 py-0.5 text-[10px] font-extrabold bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg">Suboptimal</span>
+              }
+            </div>
+            <p class="text-xs text-slate-400">
+              @if (wind < thresholds().ride.windMax && temp >= thresholds().ride.tempMin) {
+                Pleasant weather ({{ temp.toFixed(0) }}°C) and gentle winds ({{ wind.toFixed(0) }} km/h). An amazing day for a scenic road tour!
+              } @else {
+                Windy conditions ({{ wind.toFixed(0) }} km/h) or cold temperatures ({{ temp.toFixed(0) }}°C) make riding suboptimal.
+              }
+            </p>
+
+            <button type="button" (click)="showRideBreakdown.set(!showRideBreakdown())" class="mt-3 w-full flex items-center justify-between text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors focus:outline-none">
+              <span>{{ showRideBreakdown() ? 'Hide' : 'Show' }} Parameters Breakdown</span>
+              <svg class="h-3 w-3 transform transition-transform duration-200" [class.rotate-90]="showRideBreakdown()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            @if (showRideBreakdown()) {
+              <ul class="mt-2.5 pt-2.5 border-t border-slate-800/40 text-[10px] text-slate-400 space-y-1 font-mono">
+                <li class="flex justify-between"><span>Crosswind Speeds:</span> <span [class.text-emerald-400]="wind < thresholds().ride.windMax" [class.text-rose-400]="wind >= thresholds().ride.windMax">{{ wind.toFixed(0) }} km/h (Max: {{ thresholds().ride.windMax }}km/h)</span></li>
+                <li class="flex justify-between"><span>Air Temperature:</span> <span [class.text-emerald-400]="temp >= thresholds().ride.tempMin" [class.text-rose-400]="temp < thresholds().ride.tempMin">{{ temp.toFixed(0) }}°C (Min: {{ thresholds().ride.tempMin }}°C)</span></li>
+              </ul>
+            }
+          </div>
+
+          <!-- FISHING INDEX -->
+          <div class="p-4 rounded-xl border border-slate-800/40 bg-slate-950/20">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-slate-300">🎣 Coast Fishing</span>
+              @if (wave < thresholds().fish.waveMax && wind < thresholds().fish.windMax) {
+                <span class="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg">Productive</span>
+              } @else {
+                <span class="px-2 py-0.5 text-[10px] font-extrabold bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg">Rough</span>
+              }
+            </div>
+            <p class="text-xs text-slate-400">
+              @if (wave < thresholds().fish.waveMax && wind < thresholds().fish.windMax) {
+                Calm waters ({{ wave.toFixed(1) }}m wave) and light breezes. Fish active periods will match high tide changes.
+              } @else {
+                Rough swells ({{ wave.toFixed(1) }}m) or high winds. Coastal shore casting could be hazardous.
+              }
+            </p>
+
+            <button type="button" (click)="showFishBreakdown.set(!showFishBreakdown())" class="mt-3 w-full flex items-center justify-between text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors focus:outline-none">
+              <span>{{ showFishBreakdown() ? 'Hide' : 'Show' }} Parameters Breakdown</span>
+              <svg class="h-3 w-3 transform transition-transform duration-200" [class.rotate-90]="showFishBreakdown()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            @if (showFishBreakdown()) {
+              <ul class="mt-2.5 pt-2.5 border-t border-slate-800/40 text-[10px] text-slate-400 space-y-1 font-mono">
+                <li class="flex justify-between"><span>Wave Choppiness:</span> <span [class.text-emerald-400]="wave < thresholds().fish.waveMax" [class.text-rose-400]="wave >= thresholds().fish.waveMax">{{ wave.toFixed(1) }}m (Ideal: < {{ thresholds().fish.waveMax }}m)</span></li>
+                <li class="flex justify-between"><span>Surf Breeze Speed:</span> <span [class.text-emerald-400]="wind < thresholds().fish.windMax" [class.text-rose-400]="wind >= thresholds().fish.windMax">{{ wind.toFixed(0) }} km/h (Ideal: < {{ thresholds().fish.windMax }}km/h)</span></li>
+              </ul>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- SOLUNAR FISHING ACTIVITY PLANNER -->
+      <section class="bg-slate-900/20 border border-slate-800/60 p-6 rounded-2xl shadow-xl">
+        <h2 class="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+          <svg class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+          <span>🎣 Fisherman's Solunar Feed Planner</span>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          @for (win of fishingWindows(); track win.timeRange) {
+            <div class="p-4 rounded-xl border border-slate-800/40 bg-slate-950/20 flex flex-col justify-between space-y-2">
+              <div>
+                <span class="block text-xs font-bold text-slate-500 uppercase tracking-wider">{{ win.type }}</span>
+                <span class="block text-lg font-black text-white mt-1 font-mono tracking-wide">{{ win.timeRange }}</span>
+              </div>
+              <div class="pt-2 border-t border-slate-800/30 flex items-center justify-between text-[10px]">
+                <span class="text-slate-400">Peak Height: {{ win.height }}</span>
+                <span class="px-2 py-0.5 font-bold rounded-lg" [class.bg-emerald-500/10]="win.favorable" [class.text-emerald-400]="win.favorable" [class.bg-rose-500/10]="!win.favorable" [class.text-rose-400]="!win.favorable">
+                  {{ win.status }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- AI ASSISTANT CHAT CALL-TO-ACTION -->
+      <section class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between shadow-xl gap-4">
+        <div class="flex items-start space-x-4">
+          <div class="p-3 bg-cyan-500/10 text-cyan-400 rounded-xl shrink-0">
+            <svg class="h-8 w-8 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">Ask OceanCast AI</h3>
+            <p class="text-sm text-slate-400 mt-0.5">Let our context-aware assistant analyze weather metrics to optimize your riding, surfing, or fishing timings.</p>
+          </div>
+        </div>
+        <a routerLink="/ai" class="px-6 py-3 bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-bold rounded-xl hover:from-cyan-300 hover:to-blue-400 transition-all shadow-md active:scale-98 shrink-0">
+          Chat with Assistant
+        </a>
+      </section>
+    </div>
+  } @else {
+    <!-- Empty state -->
+    <div class="text-center py-20">
+      <p class="text-slate-500">Select or save a location coordinates list to load forecasts.</p>
+    </div>
+  }
+</div>

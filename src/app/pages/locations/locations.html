@@ -1,0 +1,195 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none">
+  <!-- header section -->
+  <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4">
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Saved Locations</h1>
+      <p class="text-sm text-slate-400 mt-1">Manage and select your active observation coordinates</p>
+    </div>
+    <div class="mt-4 md:mt-0 flex items-center bg-slate-900/60 border border-slate-800 px-4 py-2 rounded-xl text-xs">
+      <span class="text-slate-400 mr-2 font-medium">Selected Location:</span>
+      <span class="text-cyan-400 font-bold tracking-wide">{{ locationService.selectedLocation().name }}</span>
+      <span class="text-slate-500 ml-2 font-mono">({{ locationService.selectedLocation().lat.toFixed(2) }}, {{ locationService.selectedLocation().lon.toFixed(2) }})</span>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- ADD LOCATION FORM COLUMN -->
+    <div class="lg:col-span-1 bg-slate-900/30 backdrop-blur-md border border-slate-800/80 p-6 rounded-2xl shadow-xl h-fit">
+      <h2 class="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+        <svg class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+        <span>Add New Location</span>
+      </h2>
+
+      <form [formGroup]="locationForm" (ngSubmit)="onSubmit()" class="space-y-4">
+        <!-- Location Name -->
+        <div class="space-y-1 relative">
+          <label for="name" class="text-xs font-semibold uppercase tracking-wider text-slate-400">Location Name</label>
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            (input)="onNameInput(locationForm.get('name')?.value)"
+            placeholder="e.g. Bondi Beach"
+            class="block w-full px-4 py-3 bg-slate-950/40 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-colors text-sm"
+            [class.border-rose-500]="locationForm.get('name')?.touched && locationForm.get('name')?.invalid"
+            autocomplete="off"
+          />
+
+          <!-- Geocoding search autocomplete list -->
+          @if (geoSuggestions().length > 0) {
+            <div class="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-30 overflow-hidden divide-y divide-slate-800/40 max-h-48 overflow-y-auto">
+              @for (item of geoSuggestions(); track item.id) {
+                <button
+                  type="button"
+                  (click)="selectGeoSuggestion(item)"
+                  class="w-full text-left px-4 py-3 text-xs hover:bg-slate-800 transition-colors flex flex-col space-y-0.5"
+                >
+                  <span class="font-bold text-white">{{ item.name }}{{ item.admin1 ? ', ' + item.admin1 : '' }}{{ item.country ? ', ' + item.country : '' }}</span>
+                  <span class="text-[10px] text-slate-500 font-mono">Lat: {{ item.latitude.toFixed(4) }} | Lon: {{ item.longitude.toFixed(4) }}</span>
+                </button>
+              }
+            </div>
+          }
+
+          @if (locationForm.get('name')?.touched && locationForm.get('name')?.invalid) {
+            <span class="text-rose-400 text-xs font-medium pl-1 block mt-1">Name must be at least 2 characters.</span>
+          }
+        </div>
+
+        <!-- Coordinates -->
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Latitude -->
+          <div class="space-y-1">
+            <label for="lat" class="text-xs font-semibold uppercase tracking-wider text-slate-400">Latitude</label>
+            <input
+              id="lat"
+              type="text"
+              formControlName="lat"
+              placeholder="-90 to 90"
+              class="block w-full px-4 py-3 bg-slate-950/40 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-colors text-sm font-mono"
+              [class.border-rose-500]="locationForm.get('lat')?.touched && locationForm.get('lat')?.invalid"
+            />
+            @if (locationForm.get('lat')?.touched && locationForm.get('lat')?.invalid) {
+              <span class="text-rose-400 text-[10px] font-medium pl-1 block">Range: -90 to 90</span>
+            }
+          </div>
+
+          <!-- Longitude -->
+          <div class="space-y-1">
+            <label for="lon" class="text-xs font-semibold uppercase tracking-wider text-slate-400">Longitude</label>
+            <input
+              id="lon"
+              type="text"
+              formControlName="lon"
+              placeholder="-180 to 180"
+              class="block w-full px-4 py-3 bg-slate-950/40 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-colors text-sm font-mono"
+              [class.border-rose-500]="locationForm.get('lon')?.touched && locationForm.get('lon')?.invalid"
+            />
+            @if (locationForm.get('lon')?.touched && locationForm.get('lon')?.invalid) {
+              <span class="text-rose-400 text-[10px] font-medium pl-1 block">Range: -180 to 180</span>
+            }
+          </div>
+        </div>
+
+        <!-- Use Current location button -->
+        <button
+          type="button"
+          (click)="useCurrentGPS()"
+          class="w-full flex items-center justify-center space-x-2 py-2 px-4 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-850 hover:text-white transition-colors"
+        >
+          <svg class="h-4 w-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          </svg>
+          <span>Auto-fill GPS Coordinates</span>
+        </button>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          [disabled]="isSaving()"
+          class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-slate-950 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] mt-2"
+        >
+          @if (isSaving()) {
+            <svg class="animate-spin h-5 w-5 mr-3 text-slate-950" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Saving Location...
+          } @else {
+            Save Coordinates
+          }
+        </button>
+      </form>
+    </div>
+
+    <!-- SAVED LOCATIONS LIST COLUMN -->
+    <div class="lg:col-span-2 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+          <svg class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+          <span>Your Locations</span>
+        </h2>
+        
+        @if (isFetching()) {
+          <span class="text-xs text-slate-400">Refreshing...</span>
+        }
+      </div>
+
+      @if (isFetching() && locationService.savedLocations().length === 0) {
+        <app-spinner message="Loading your saved locations..."></app-spinner>
+      } @else if (locationService.savedLocations().length === 0) {
+        <!-- Empty State -->
+        <div class="flex flex-col items-center justify-center p-12 bg-slate-900/10 border border-slate-800/40 rounded-2xl text-center space-y-4">
+          <svg class="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          </svg>
+          <div class="space-y-1">
+            <h3 class="text-md font-semibold text-slate-350">No locations saved yet</h3>
+            <p class="text-xs text-slate-500 max-w-sm">Save your favorite surf beaches, fishing docks, or motorcycle routes to monitor marine conditions.</p>
+          </div>
+        </div>
+      } @else {
+        <!-- Grid of Locations -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          @for (loc of locationService.savedLocations(); track loc._id) {
+            <div
+              (click)="selectLocation(loc)"
+              class="group relative flex items-center justify-between p-5 bg-slate-905 border rounded-2xl shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg hover:bg-slate-900 cursor-pointer"
+              [class.border-cyan-500\/50]="locationService.selectedLocation()._id === loc._id"
+              [class.bg-slate-900\/60]="locationService.selectedLocation()._id === loc._id"
+              [class.border-slate-800]="locationService.selectedLocation()._id !== loc._id"
+            >
+              <div class="space-y-1 select-none">
+                <div class="flex items-center space-x-2">
+                  <span class="font-bold text-md text-white group-hover:text-cyan-400 transition-colors">{{ loc.name }}</span>
+                  @if (locationService.selectedLocation()._id === loc._id) {
+                    <span class="px-2 py-0.5 text-[10px] font-bold text-slate-950 bg-cyan-400 rounded-full select-none">Active</span>
+                  }
+                </div>
+                <div class="text-xs text-slate-400 font-mono tracking-wide">
+                  Lat: {{ loc.lat.toFixed(4) }} | Lon: {{ loc.lon.toFixed(4) }}
+                </div>
+              </div>
+
+              <!-- Delete Button -->
+              <button
+                (click)="deleteLocation($event, loc)"
+                class="p-2 rounded-lg hover:bg-rose-950/20 text-slate-500 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                type="button"
+                title="Delete Location"
+              >
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>
