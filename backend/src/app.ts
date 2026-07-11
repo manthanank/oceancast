@@ -21,6 +21,7 @@ import mapRoutes from './routes/map';
 import solunarRoutes from './routes/solunar';
 import catchRoutes from './routes/catches';
 import visibilityRoutes from './routes/visibility';
+import marineHubRoutes from './routes/marine-hub';
 
 const app = express();
 
@@ -86,6 +87,7 @@ app.use('/api/map', mapRoutes);
 app.use('/api/solunar', solunarRoutes);
 app.use('/api/catches', catchRoutes);
 app.use('/api/visibility', visibilityRoutes);
+app.use('/api/marine-hub', marineHubRoutes);
 
 // Root route
 app.get('/', (req: Request, res: Response) => {

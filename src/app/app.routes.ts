@@ -111,6 +111,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
     title: 'Water Clarity & Diving Visibility Forecast - OceanCast',
   },
+  {
+    path: 'marine-hub',
+    loadComponent: () => import('./pages/marine-hub/marine-hub').then((m) => m.MarineHub),
+    canActivate: [authGuard],
+    title: 'Marine Activity & Safety Hub - OceanCast',
+  },
 
   // Redirections and Wildcard
   {

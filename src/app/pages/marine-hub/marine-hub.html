@@ -1,0 +1,380 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none">
+  <!-- HEADER -->
+  <header class="mb-6 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+        Marine Safety &amp; Activity Hub
+      </h1>
+      <p class="text-sm text-slate-400 mt-1">
+        Integrated calculators for coastal property residents, paddleboarders, wildlife spotters, and yacht crews
+      </p>
+    </div>
+    
+    <!-- Controls -->
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Active Location Indicator -->
+      <div class="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-xs flex items-center">
+        <span class="text-slate-400 mr-2 font-medium">Spot:</span>
+        <span class="text-cyan-400 font-bold tracking-wide">{{ locationService.selectedLocation().name }}</span>
+      </div>
+
+      <!-- Date selector with adjustment arrows -->
+      <div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1">
+        <button
+          (click)="adjustDate(-1)"
+          class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+          title="Previous Day"
+        >
+          &larr;
+        </button>
+        
+        <input
+          type="date"
+          [value]="selectedDate()"
+          (change)="onDateChange($event)"
+          class="bg-transparent border-0 focus:ring-0 text-xs font-bold text-slate-200 px-3 cursor-pointer py-1 select-none"
+        />
+
+        <button
+          (click)="adjustDate(1)"
+          class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+          title="Next Day"
+        >
+          &rarr;
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- TAB SWITCHER NAV -->
+  <div class="flex flex-wrap border-b border-slate-800 gap-2 mb-8 select-none">
+    <button
+      (click)="switchTab('flooding')"
+      class="px-4 py-3 text-sm font-bold border-b-2 transition-all flex items-center space-x-2"
+      [class.border-cyan-400]="activeTab() === 'flooding'"
+      [class.text-cyan-400]="activeTab() === 'flooding'"
+      [class.border-transparent]="activeTab() !== 'flooding'"
+      [class.text-slate-400]="activeTab() !== 'flooding'"
+    >
+      <span>🌊</span>
+      <span>Flooding &amp; King Tides</span>
+    </button>
+
+    <button
+      (click)="switchTab('paddling')"
+      class="px-4 py-3 text-sm font-bold border-b-2 transition-all flex items-center space-x-2"
+      [class.border-cyan-400]="activeTab() === 'paddling'"
+      [class.text-cyan-400]="activeTab() === 'paddling'"
+      [class.border-transparent]="activeTab() !== 'paddling'"
+      [class.text-slate-400]="activeTab() !== 'paddling'"
+    >
+      <span>🛶</span>
+      <span>Kayak &amp; Paddleboard</span>
+    </button>
+
+    <button
+      (click)="switchTab('wildlife')"
+      class="px-4 py-3 text-sm font-bold border-b-2 transition-all flex items-center space-x-2"
+      [class.border-cyan-400]="activeTab() === 'wildlife'"
+      [class.text-cyan-400]="activeTab() === 'wildlife'"
+      [class.border-transparent]="activeTab() !== 'wildlife'"
+      [class.text-slate-400]="activeTab() !== 'wildlife'"
+    >
+      <span>🐋</span>
+      <span>Wildlife Spotter</span>
+    </button>
+
+    <button
+      (click)="switchTab('energy')"
+      class="px-4 py-3 text-sm font-bold border-b-2 transition-all flex items-center space-x-2"
+      [class.border-cyan-400]="activeTab() === 'energy'"
+      [class.text-cyan-400]="activeTab() === 'energy'"
+      [class.border-transparent]="activeTab() !== 'energy'"
+      [class.text-slate-400]="activeTab() !== 'energy'"
+    >
+      <span>🔋</span>
+      <span>Off-Grid Yacht Power</span>
+    </button>
+  </div>
+
+  <!-- TAB CONTENTS -->
+  @if (isLoading()) {
+    <app-spinner message="Querying global ocean models and generating forecasts..."></app-spinner>
+  } @else if (data()) {
+    <div class="animate-fade-in pb-12">
+      
+      <!-- 1. FLOODING & TIDES TAB -->
+      @if (activeTab() === 'flooding') {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Left metrics panel -->
+          <div class="lg:col-span-1 space-y-6">
+            <!-- Flood Risk Indicator Card -->
+            <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl flex flex-col items-center text-center">
+              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-4 w-full text-left">Coastal Flood Risk</span>
+              
+              <div class="h-28 w-28 rounded-full border-4 flex flex-col items-center justify-center mb-4 transition-all"
+                [class.border-emerald-500]="data()!.flooding.floodRisk === 'Low'"
+                [class.border-amber-500]="data()!.flooding.floodRisk === 'Moderate'"
+                [class.border-rose-500]="data()!.flooding.floodRisk === 'High'"
+              >
+                <span class="text-3xl">🌊</span>
+                <span class="text-xs font-black uppercase text-white mt-1">{{ data()!.flooding.floodRisk }}</span>
+              </div>
+              
+              <span class="text-[10px] text-slate-400 block max-w-xs font-semibold">
+                Risk calculated from tides and storm wave surge interactions.
+              </span>
+            </div>
+
+            <!-- King tide warning strip -->
+            @if (data()!.flooding.kingTideAlert) {
+              <div class="bg-amber-950/20 border border-amber-500/30 text-amber-300 p-5 rounded-2xl flex items-start space-x-3 shadow-lg">
+                <span class="text-2xl mt-0.5">⚠️</span>
+                <div class="space-y-1">
+                  <h4 class="text-xs font-black uppercase tracking-wider">King Tide Warning Active</h4>
+                  <p class="text-[10px] leading-tight text-amber-400/90">
+                    Full or new moon alignment pushes high tide peaks to extreme levels. Expect flooding in shore parking lots.
+                  </p>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Right explanation panel -->
+          <div class="lg:col-span-2 space-y-6">
+            <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
+                <span>📖</span>
+                <span>Water Level Breakdown</span>
+              </h3>
+              
+              <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl">
+                <p class="text-sm text-slate-200 font-semibold leading-relaxed">
+                  {{ data()!.flooding.advisory }}
+                </p>
+              </div>
+
+              <!-- Numerical specifics -->
+              <div class="grid grid-cols-2 gap-4 pt-2">
+                <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl space-y-1">
+                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Simulated Peak Tide</span>
+                  <span class="text-xl font-mono font-bold text-white block">{{ data()!.flooding.peakTideHeight }}m</span>
+                  <span class="text-[10px] text-slate-500 block leading-tight">Slack high water marks.</span>
+                </div>
+
+                <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl space-y-1">
+                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Simulated Wave Surge</span>
+                  <span class="text-xl font-mono font-bold text-white block">+{{ data()!.flooding.surgeHeight }}m</span>
+                  <span class="text-[10px] text-slate-500 block leading-tight">Wave setups pushing sea level.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 2. KAYAK & PADDLEBOARD TAB -->
+      @if (activeTab() === 'paddling') {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Left Column -->
+          <div class="lg:col-span-1 space-y-6">
+            <!-- Difficulty card -->
+            <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl flex flex-col items-center text-center">
+              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-4 w-full text-left">Paddling Difficulty</span>
+              
+              <div class="h-28 w-28 rounded-full border-4 flex flex-col items-center justify-center mb-4 transition-all"
+                [class.border-emerald-500]="data()!.paddling.difficulty === 'Easy'"
+                [class.border-amber-500]="data()!.paddling.difficulty === 'Moderate'"
+                [class.border-orange-500]="data()!.paddling.difficulty === 'Strenuous'"
+                [class.border-rose-500]="data()!.paddling.difficulty === 'Dangerous'"
+              >
+                <span class="text-3xl">🛶</span>
+                <span class="text-xs font-black uppercase text-white mt-1">{{ data()!.paddling.difficulty }}</span>
+              </div>
+              
+              <span class="text-[10px] text-slate-400 block max-w-xs font-semibold">
+                Based on wave heights, offshore push risks, and headwind velocity.
+              </span>
+            </div>
+
+            <!-- Offshore warning -->
+            @if (data()!.paddling.offshoreWind) {
+              <div class="bg-rose-950/20 border border-rose-500/30 text-rose-300 p-5 rounded-2xl flex items-start space-x-3 shadow-lg">
+                <span class="text-2xl mt-0.5">🚨</span>
+                <div class="space-y-1">
+                  <h4 class="text-xs font-black uppercase tracking-wider">Offshore Winds Active</h4>
+                  <p class="text-[10px] leading-tight text-rose-400/90">
+                    Winds are blowing away from the shoreline. Inflatables and boards will experience rapid deep water drift.
+                  </p>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Right Column -->
+          <div class="lg:col-span-2 space-y-6">
+            <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
+                <span>📖</span>
+                <span>Drift &amp; Safety Advisory</span>
+              </h3>
+              
+              <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl">
+                <p class="text-sm text-slate-200 font-semibold leading-relaxed">
+                  {{ data()!.paddling.advisory }}
+                </p>
+              </div>
+
+              <!-- Metrics details -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl space-y-1">
+                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Estimated Drift Rate</span>
+                  <span class="text-xl font-mono font-bold text-white block">{{ data()!.paddling.driftRateKnots }} knots</span>
+                  <span class="text-[10px] text-slate-500 block leading-tight">Wind/wave combined drag velocity.</span>
+                </div>
+
+                <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl space-y-1">
+                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Wind direction type</span>
+                  <span class="text-md font-bold block" [class.text-rose-400]="data()!.paddling.offshoreWind" [class.text-emerald-400]="!data()!.paddling.offshoreWind">
+                    {{ data()!.paddling.offshoreWind ? '💨 Offshore (Outward)' : '🌬️ Onshore (Inward)' }}
+                  </span>
+                  <span class="text-[10px] text-slate-500 block leading-tight">Relative to coastal profile.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 3. WILDLIFE SPOTTER TAB -->
+      @if (activeTab() === 'wildlife') {
+        <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-6">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
+            <span>🔭</span>
+            <span>Wildlife Spotting Indicators</span>
+          </h3>
+
+          <!-- Advisory banner -->
+          <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl">
+            <p class="text-sm text-slate-200 font-semibold leading-relaxed">
+              {{ data()!.wildlife.advisory }}
+            </p>
+          </div>
+
+          <!-- Likelihood Bars list -->
+          <div class="space-y-6">
+            <!-- Whales -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs font-bold w-full">
+                <span class="flex items-center space-x-2">
+                  <span class="text-lg">🐋</span>
+                  <span>Whale Sightings Probability</span>
+                </span>
+                <span class="text-cyan-400">{{ data()!.wildlife.whaleLikelihood }}%</span>
+              </div>
+              <div class="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div class="h-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-1000 ease-out" [style.width.%]="data()!.wildlife.whaleLikelihood"></div>
+              </div>
+              <span class="text-[10px] text-slate-500 block">Higher probability in cool migratory currents below 18°C.</span>
+            </div>
+
+            <!-- Dolphins -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs font-bold w-full">
+                <span class="flex items-center space-x-2">
+                  <span class="text-lg">🐬</span>
+                  <span>Dolphin Activity Index</span>
+                </span>
+                <span class="text-emerald-400">{{ data()!.wildlife.dolphinLikelihood }}%</span>
+              </div>
+              <div class="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div class="h-full bg-gradient-to-r from-teal-600 to-emerald-500 transition-all duration-1000 ease-out" [style.width.%]="data()!.wildlife.dolphinLikelihood"></div>
+              </div>
+              <span class="text-[10px] text-slate-500 block">Dolphins hunt closer to shores in warm, calm waters.</span>
+            </div>
+
+            <!-- Bioluminescence -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs font-bold w-full">
+                <span class="flex items-center space-x-2">
+                  <span class="text-lg">✨</span>
+                  <span>Bioluminescence Score</span>
+                </span>
+                <span class="text-purple-400">{{ data()!.wildlife.bioluminescenceScore }}%</span>
+              </div>
+              <div class="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div class="h-full bg-gradient-to-r from-indigo-600 to-purple-500 transition-all duration-1000 ease-out" [style.width.%]="data()!.wildlife.bioluminescenceScore"></div>
+              </div>
+              <span class="text-[10px] text-slate-500 block">Highest on dark nights (new moon cycles) in waters >19°C.</span>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 4. OFF-GRID POWER TAB -->
+      @if (activeTab() === 'energy') {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Left yields widgets -->
+          <div class="lg:col-span-2 space-y-6">
+            <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-6">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
+                <span>🔋</span>
+                <span>Off-Grid Daily Power Estimates</span>
+              </h3>
+
+              <!-- Power progress bars -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Solar Yield -->
+                <div class="p-5 bg-slate-950/40 border border-slate-800/60 rounded-xl space-y-4">
+                  <div class="flex items-center justify-between text-xs font-bold">
+                    <span>☀️ Solar Charging (100W Panel)</span>
+                    <span class="text-yellow-400">{{ data()!.solarWind.solarStatus }}</span>
+                  </div>
+                  <div class="text-3xl font-mono font-black text-white">
+                    {{ data()!.solarWind.solarYieldWh }} <span class="text-xs text-slate-500 font-bold">Wh/day</span>
+                  </div>
+                  <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden">
+                    <div class="h-full bg-yellow-500 transition-all duration-1000 ease-out" [style.width.%]="Math.min(100, data()!.solarWind.solarYieldWh / 5)"></div>
+                  </div>
+                </div>
+
+                <!-- Wind turbine yield -->
+                <div class="p-5 bg-slate-950/40 border border-slate-800/60 rounded-xl space-y-4">
+                  <div class="flex items-center justify-between text-xs font-bold">
+                    <span>🌀 Wind Generation (300W Turbine)</span>
+                    <span class="text-cyan-400">{{ data()!.solarWind.windStatus }}</span>
+                  </div>
+                  <div class="text-3xl font-mono font-black text-white">
+                    {{ data()!.solarWind.windYieldWh }} <span class="text-xs text-slate-500 font-bold">Wh/day</span>
+                  </div>
+                  <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden">
+                    <div class="h-full bg-cyan-500 transition-all duration-1000 ease-out" [style.width.%]="Math.min(100, data()!.solarWind.windYieldWh / 30)"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Brief advisory box -->
+              <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl text-xs text-slate-400">
+                ⚠️ Yield calculations are simulated estimates. Actual values depend on panel orientation, battery state, and turbine height mount.
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="lg:col-span-1 space-y-6">
+            <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Battery advisory</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                {{ data()!.solarWind.advisory }}
+              </p>
+              <div class="pt-3 border-t border-slate-800 text-[10px] text-slate-500 leading-normal">
+                🔋 **Yacht Power tip**: Combine solar yields during daylight with wind generators at night for optimal, self-sustained battery maintenance.
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+    </div>
+  }
+</div>
