@@ -1,0 +1,184 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none animate-fade-in">
+  <!-- HEADER -->
+  <header class="mb-8 border-b border-slate-800 pb-4">
+    <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+      Spot Comparison
+    </h1>
+    <p class="text-sm text-slate-400 mt-1">
+      Compare weather, waves, wind speed, and advisory conditions across multiple coordinates side-by-side
+    </p>
+  </header>
+
+  <!-- SELECT SPOTS CHECKS PANEL -->
+  <div class="bg-slate-900/30 border border-slate-800/80 p-5 rounded-2xl mb-8 shadow-md">
+    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-3">
+      📍 Select up to 3 Locations to Compare
+    </span>
+    
+    @if (locationService.savedLocations().length === 0) {
+      <p class="text-xs text-amber-400">
+        No saved locations found. Please add locations first in the <a href="/locations" class="underline text-cyan-400">Locations manager</a>.
+      </p>
+    } @else {
+      <div class="flex flex-wrap gap-3">
+        @for (loc of locationService.savedLocations(); track loc._id) {
+          <button
+            type="button"
+            (click)="toggleSpotSelection(loc._id!)"
+            class="flex items-center space-x-2 px-4 py-2 border rounded-xl text-xs font-bold transition-all"
+            [class.border-cyan-400]="selectedSpotIds().includes(loc._id!)"
+            [class.text-cyan-400]="selectedSpotIds().includes(loc._id!)"
+            [class.bg-cyan-500/5]="selectedSpotIds().includes(loc._id!)"
+            [class.border-slate-800]="!selectedSpotIds().includes(loc._id!)"
+            [class.text-slate-400]="!selectedSpotIds().includes(loc._id!)"
+          >
+            <span
+              class="h-2.5 w-2.5 rounded-full"
+              [class.bg-cyan-400]="selectedSpotIds().includes(loc._id!)"
+              [class.bg-slate-700]="!selectedSpotIds().includes(loc._id!)"
+            ></span>
+            <span>{{ loc.name }}</span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- COMPARISON DISPLAY ZONE -->
+  @if (isLoading()) {
+    <app-spinner message="Fetching meteorological forecasting grids in parallel..."></app-spinner>
+  } @else if (selectedSpotIds().length === 0) {
+    <!-- Empty selection state -->
+    <div class="flex flex-col items-center justify-center p-12 bg-slate-900/10 border border-slate-800/40 rounded-2xl text-center space-y-3">
+      <span class="text-3xl">⚖️</span>
+      <h3 class="text-md font-semibold text-slate-350">No locations selected</h3>
+      <p class="text-xs text-slate-500 max-w-sm">
+        Select locations from the checklists above to build a real-time side-by-side comparison report.
+      </p>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      @for (spot of comparisonSpots(); track spot.location._id) {
+        <div class="bg-slate-900/20 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between">
+          
+          <!-- SPOT TITLE CARD HEADER -->
+          <div class="bg-slate-900/60 p-5 border-b border-slate-800/60 relative">
+            <h3 class="text-lg font-black text-white truncate pr-16">{{ spot.location.name }}</h3>
+            <span class="text-[10px] text-slate-500 font-mono tracking-wider block mt-1">
+              Lat: {{ spot.location.lat.toFixed(4) }} | Lon: {{ spot.location.lon.toFixed(4) }}
+            </span>
+            
+            <!-- Global Select trigger button -->
+            <button
+              (click)="makeActiveLocation(spot.location)"
+              class="absolute top-4 right-4 text-[10px] font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 px-2.5 py-1.5 rounded-lg shadow transition-colors"
+            >
+              Set Active
+            </button>
+          </div>
+
+          <!-- DATA MATRIX -->
+          <div class="p-5 flex-1 space-y-4 divide-y divide-slate-800/40">
+            
+            <!-- Safety Advisory -->
+            <div class="pt-0">
+              <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Fisherman Advisory</span>
+              <div
+                class="px-3 py-2 rounded-xl text-xs font-bold leading-relaxed border"
+                [class.bg-green-500/5]="spot.safetyStatus === 'safe'"
+                [class.border-green-500/20]="spot.safetyStatus === 'safe'"
+                [class.text-green-400]="spot.safetyStatus === 'safe'"
+                [class.bg-amber-500/5]="spot.safetyStatus === 'caution'"
+                [class.border-amber-500/20]="spot.safetyStatus === 'caution'"
+                [class.text-amber-400]="spot.safetyStatus === 'caution'"
+                [class.bg-red-500/5]="spot.safetyStatus === 'danger'"
+                [class.border-red-500/20]="spot.safetyStatus === 'danger'"
+                [class.text-red-400]="spot.safetyStatus === 'danger'"
+              >
+                {{ spot.safetyReason }}
+              </div>
+            </div>
+
+            <!-- Temperature & Weather -->
+            <div class="pt-3 flex items-center justify-between">
+              <div>
+                <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Weather Overview</span>
+                <span class="text-xs text-slate-300 font-bold block">
+                  {{ getWeatherDescription(spot.weather.weather?.current?.weatherCode || 0) }}
+                </span>
+              </div>
+              <span class="text-lg font-black text-white font-mono">
+                {{ settingsService.formatTemp(spot.weather.weather?.current?.temp || 0) }}
+              </span>
+            </div>
+
+            <!-- Waves swell -->
+            <div class="pt-3 flex items-center justify-between">
+              <div>
+                <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Swell Wave Height</span>
+                <span class="text-xs text-slate-300 font-bold block">
+                  Height Metric
+                </span>
+              </div>
+              <span class="text-lg font-black text-white font-mono">
+                {{ spot.weather.marine?.current?.waveHeight ? spot.weather.marine.current.waveHeight.toFixed(1) + 'm' : 'N/A' }}
+              </span>
+            </div>
+
+            <!-- Wave period -->
+            <div class="pt-3 flex items-center justify-between">
+              <div>
+                <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Wave Period</span>
+                <span class="text-xs text-slate-300 font-bold block">
+                  Wave frequency
+                </span>
+              </div>
+              <span class="text-lg font-black text-white font-mono">
+                {{ spot.weather.marine?.current?.wavePeriod ? spot.weather.marine.current.wavePeriod.toFixed(0) + 's' : 'N/A' }}
+              </span>
+            </div>
+
+            <!-- Wind conditions -->
+            <div class="pt-3 flex items-center justify-between">
+              <div>
+                <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Wind Velocity</span>
+                <span class="text-xs text-slate-300 font-bold block">
+                  Wind Direction: {{ spot.weather.weather?.current?.windDirection || 0 }}°
+                </span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-black text-white font-mono">
+                  {{ settingsService.formatWind(spot.weather.weather?.current?.windSpeed || 0) }}
+                </span>
+                <!-- Wind direction rotated arrow icon -->
+                <div
+                  [style.transform]="'rotate(' + (spot.weather.weather?.current?.windDirection || 0) + 'deg)'"
+                  class="h-6 w-6 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-slate-300 text-xs font-bold"
+                  title="Wind flow"
+                >
+                  ↑
+                </div>
+              </div>
+            </div>
+
+            <!-- Astronomical Solunar peak -->
+            <div class="pt-3 flex items-center justify-between">
+              <div>
+                <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Solar cycles</span>
+                <span class="text-xs text-slate-300 font-bold block">
+                  Sunrise / Sunset
+                </span>
+              </div>
+              <span class="text-xs font-black text-slate-200 font-mono">
+                {{ spot.weather.weather?.daily?.[0]?.sunrise ? spot.weather.weather.daily[0].sunrise.split('T')[1] : 'N/A' }} / 
+                {{ spot.weather.weather?.daily?.[0]?.sunset ? spot.weather.weather.daily[0].sunset.split('T')[1] : 'N/A' }}
+              </span>
+            </div>
+
+          </div>
+
+        </div>
+      }
+    </div>
+  }
+</div>

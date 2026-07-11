@@ -52,6 +52,12 @@ export const routes: Routes = [
     title: 'Digital Catch Logbook & Smart Journal - OceanCast',
   },
   {
+    path: 'compare',
+    loadComponent: () => import('./pages/compare/compare').then((m) => m.Compare),
+    canActivate: [authGuard],
+    title: 'Spot Comparison Console - OceanCast',
+  },
+  {
     path: 'locations',
     loadComponent: () => import('./pages/locations/locations').then((m) => m.Locations),
     canActivate: [authGuard],

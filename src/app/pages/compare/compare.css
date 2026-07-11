@@ -1,0 +1,4 @@
+/* Comparison page CSS overrides */
+:host {
+  display: block;
+}
