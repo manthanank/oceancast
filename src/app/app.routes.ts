@@ -46,6 +46,12 @@ export const routes: Routes = [
     title: 'Your Saved Observation Locations - OceanCast',
   },
   {
+    path: 'map',
+    loadComponent: () => import('./pages/ocean-map/ocean-map').then((m) => m.OceanMap),
+    canActivate: [authGuard],
+    title: 'Ocean Map — Wind & Fishing Zones - OceanCast',
+  },
+  {
     path: 'ai',
     loadComponent: () => import('./pages/ai-chat/ai-chat').then((m) => m.AiChat),
     canActivate: [authGuard],
