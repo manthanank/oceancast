@@ -1,0 +1,37 @@
+/* Print layouts styling rules */
+
+:host {
+  display: block;
+}
+
+/* Hide print-only section on standard screen view */
+.print-only {
+  display: none;
+}
+
+/* Printing logic overrides */
+@media print {
+  /* Hide standard page elements */
+  .screen-only {
+    display: none !important;
+  }
+
+  /* Show paper block layout fully */
+  .print-only {
+    display: block !important;
+    background: white !important;
+    color: black !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+
+  /* Force headers and texts back to visible black */
+  h1, h2, h3, p, li, strong, span, div {
+    color: #000000 !important;
+    text-shadow: none !important;
+  }
+
+  body, html {
+    background: white !important;
+    color: black !important;
+  }
+}

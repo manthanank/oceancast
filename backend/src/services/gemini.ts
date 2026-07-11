@@ -69,6 +69,81 @@ INSTRUCTIONS:
   }
 
   /**
+   * Generates a structured daily angler briefing report
+   */
+  public async generateAnglerReport(
+    locationName: string,
+    weatherContext: string
+  ): Promise<string> {
+    try {
+      if (!this.genAI) {
+        return this.getMockAnglerReport(locationName, weatherContext);
+      }
+
+      const prompt = `
+You are OceanCast's Master Angler Assistant, a highly experienced fishing guide and marine safety officer.
+Your task is to write a detailed, professional, and structured "Daily Angler Briefing Report" for a fisherman planning a trip to "${locationName}".
+
+Rely on the following current weather, wave, and tide conditions context for your analysis:
+---
+${weatherContext}
+---
+
+INSTRUCTIONS & STRUCTURE:
+1. Write in a clear, non-technical plain language but with professional formatting. Use markdown headings, bullet points, and clean lists.
+2. Structure the report precisely as follows:
+   - **Executive Advisory (Rating: X/10)**: Provide a summary of how favorable conditions are. Warn explicitly if winds, swell, or tide conditions present safety hazards.
+   - **Target Species Recommendation**: Recommend 2-3 local species that are most active or favorable to target under these specific conditions. Explain why.
+   - **Rigging & Tackle Setup**: Suggest specific rigs, bait, artificial lures, line test weight, and rod action appropriate for these conditions.
+   - **Solunar & Tide Window Strategy**: Give precise tactical instructions on what hours to fish.
+3. Do not add long introductions or conversational filler. Start directly with the Executive Advisory. Keep it concise enough to fit on a single page.
+`;
+
+      const result = await this.genAI.models.generateContent({
+        model: this.modelName,
+        contents: prompt,
+      });
+      return (result.text || '').trim();
+    } catch (error: any) {
+      console.error('Gemini report generation failed, falling back to mock:', error);
+      return this.getMockAnglerReport(locationName, weatherContext);
+    }
+  }
+
+  /**
+   * Provides a fallback response using local heuristic rules if the Gemini API key is missing or fails
+   */
+  private getMockAnglerReport(locationName: string, weatherContext: string): string {
+    const tempMatch = weatherContext.match(/Temperature: ([\d.-]+)/);
+    const windMatch = weatherContext.match(/Wind Speed: ([\d.-]+)/);
+    const waveMatch = weatherContext.match(/Wave Height: ([\d.-]+)/);
+    
+    const temp = tempMatch ? parseFloat(tempMatch[1]) : 22;
+    const wind = windMatch ? parseFloat(windMatch[1]) : 10;
+    const wave = waveMatch ? parseFloat(waveMatch[1]) : 0.5;
+
+    const rating = wave > 2.0 || wind > 25 ? 4 : (wave < 0.3 ? 6 : 8);
+
+    return `# Daily Angler Briefing: ${locationName}
+
+## Executive Advisory (Rating: ${rating}/10)
+Conditions are currently ${rating >= 8 ? 'excellent' : (rating >= 6 ? 'fair' : 'poor/hazardous')} for fishing. We have a temperature of ${temp}°C, winds at ${wind} km/h, and waves at ${wave}m. ${wave > 2.0 ? '🚨 WARNING: Rough wave swells detected. Pier and shore casting is dangerous.' : 'Overall, calm sea conditions provide steady, safe casting.'}
+
+## Target Species Recommendation
+- **Snapper & Seabass**: Favorable due to the mild wave action of ${wave}m stir-up near rocky dropoffs.
+- **Flathead / Flounder**: Highly active along sandy bottoms. Seek out tidal channels as current moves.
+
+## Rigging & Tackle Setup
+- **Rig**: Running sinker rig with a 2/0 hook for live bait presentation.
+- **Bait**: Freshly caught sand worms, squid strips, or pilchards.
+- **Artificial Lures**: 3-inch soft plastics in pearl or motor-oil colors on a 1/4oz jig head. 
+
+## Solunar & Tide Window Strategy
+- **Tide Plan**: Target the period 1.5 hours before and after the tide transitions.
+- **Optimal Hours**: Early morning and around peak high water phases. Use the tides chart to identify your local slack water times.`;
+  }
+
+  /**
    * Provides a fallback response using local heuristic rules if the Gemini API key is missing or fails
    */
   private getMockResponse(message: string, weatherContext: string): string {
@@ -116,3 +191,4 @@ INSTRUCTIONS:
     return response;
   }
 }
+

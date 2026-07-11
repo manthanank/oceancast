@@ -58,6 +58,12 @@ export const routes: Routes = [
     title: 'Spot Comparison Console - OceanCast',
   },
   {
+    path: 'angler-report',
+    loadComponent: () => import('./pages/angler-report/angler-report').then((m) => m.AnglerReport),
+    canActivate: [authGuard],
+    title: 'AI Angler Briefing - OceanCast',
+  },
+  {
     path: 'locations',
     loadComponent: () => import('./pages/locations/locations').then((m) => m.Locations),
     canActivate: [authGuard],
