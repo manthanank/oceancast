@@ -1,0 +1,242 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none">
+  <!-- HEADER -->
+  <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+        Solunar Fishing Calendar
+      </h1>
+      <p class="text-sm text-slate-400 mt-1">
+        Track peak bite feeding times and moon phases for the active coordinates
+      </p>
+    </div>
+    
+    <!-- Location & Date Controls -->
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Active Location indicator -->
+      <div class="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-xs flex items-center">
+        <span class="text-slate-400 mr-2 font-medium">Spot:</span>
+        <span class="text-cyan-400 font-bold tracking-wide">{{ locationService.selectedLocation().name }}</span>
+      </div>
+
+      <!-- Date selector with adjustment arrows -->
+      <div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1">
+        <button
+          (click)="adjustDate(-1)"
+          class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+          title="Previous Day"
+        >
+          &larr;
+        </button>
+        
+        <input
+          type="date"
+          [value]="selectedDate()"
+          (change)="onDateChange($event)"
+          class="bg-transparent border-0 focus:ring-0 text-xs font-bold text-slate-200 px-3 cursor-pointer py-1 select-none"
+        />
+
+        <button
+          (click)="adjustDate(1)"
+          class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+          title="Next Day"
+        >
+          &rarr;
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- BODY CONTENT -->
+  @if (isLoading()) {
+    <app-spinner message="Computing solunar cycles and animal feeding models..."></app-spinner>
+  } @else if (solunarData()) {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- LEFT HAND COLUMN: SCORE & MOON GRAPHICS -->
+      <div class="lg:col-span-1 space-y-6">
+        
+        <!-- DAILY ACTIVITY SCORE CARD -->
+        <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl flex flex-col items-center text-center">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-6 w-full text-left">
+            Daily Feeding Rating
+          </h2>
+
+          <!-- Radial Gauge Dial -->
+          <div class="relative w-40 h-40 flex items-center justify-center mb-4">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              <!-- Background circle -->
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke="#1e293b"
+                stroke-width="8"
+              ></circle>
+              <!-- Colored indicator ring -->
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                [attr.stroke]="solunarData()!.activityScore >= 80 ? '#14b8a6' : (solunarData()!.activityScore >= 60 ? '#10b981' : (solunarData()!.activityScore >= 40 ? '#f59e0b' : '#ef4444'))"
+                stroke-width="8"
+                [attr.stroke-dasharray]="251.2"
+                [attr.stroke-dashoffset]="251.2 - (251.2 * solunarData()!.activityScore / 100)"
+                stroke-linecap="round"
+                class="transition-all duration-1000 ease-out"
+              ></circle>
+            </svg>
+            <div class="absolute flex flex-col items-center justify-center">
+              <span class="text-4xl font-black text-white tracking-tight">
+                {{ solunarData()!.activityScore }}%
+              </span>
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                Bite Rate
+              </span>
+            </div>
+          </div>
+
+          <!-- Verbal Descriptor -->
+          <div class="space-y-1">
+            <h3 class="text-md font-bold text-white">
+              {{ getRatingDescription(solunarData()!.activityScore) }}
+            </h3>
+            <p class="text-xs text-slate-400 max-w-xs leading-relaxed">
+              Based on lunar gravitational pull and solar alignment for {{ solunarData()!.date }}.
+            </p>
+          </div>
+        </div>
+
+        <!-- MOON PHASE CARD -->
+        <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl flex flex-col items-center text-center">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-6 w-full text-left">
+            Moon Phase &amp; Illumination
+          </h2>
+
+          <!-- Moon Graphic Shadow SVG -->
+          <div class="w-24 h-24 relative mb-4">
+            <!-- Background Full Black Circle representing shadow -->
+            <svg class="w-full h-full" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="48" fill="#090d16" stroke="#1e293b" stroke-width="2"></circle>
+              <!-- Illuminated Crescent path -->
+              @if (solunarData()!.illumination > 0) {
+                <path
+                  [attr.d]="getMoonPhaseSvgPath(solunarData()!.moonPhase, solunarData()!.illumination)"
+                  fill="#f1f5f9"
+                  filter="drop-shadow(0 0 4px rgba(241, 245, 249, 0.4))"
+                ></path>
+              }
+            </svg>
+          </div>
+
+          <div class="space-y-1">
+            <span class="text-lg font-bold text-slate-200 block">
+              {{ solunarData()!.moonPhase }}
+            </span>
+            <span class="text-xs text-slate-400 block font-mono">
+              Illumination: {{ solunarData()!.illumination }}% · Age: {{ solunarData()!.moonAge }} days
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT HAND COLUMN: TIMES & CHART -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- FEEDING PERIODS LIST -->
+        <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
+            <svg class="h-4 w-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Peak Activity Windows</span>
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @for (period of solunarData()!.periods; track period.name) {
+              <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl flex items-start space-x-3">
+                <span class="text-xl">
+                  {{ period.type === 'major' ? '🔥' : '⚡' }}
+                </span>
+                <div class="space-y-1">
+                  <div class="flex items-center space-x-1.5">
+                    <span class="text-xs font-bold text-slate-200">{{ period.name }}</span>
+                    <span
+                      class="px-1.5 py-0.5 text-[8px] font-bold rounded uppercase tracking-wider"
+                      [class.bg-cyan-500/10]="period.type === 'major'"
+                      [class.text-cyan-400]="period.type === 'major'"
+                      [class.bg-slate-800]="period.type === 'minor'"
+                      [class.text-slate-400]="period.type === 'minor'"
+                    >
+                      {{ period.type }}
+                    </span>
+                  </div>
+                  <span class="text-md font-extrabold text-white block tracking-wide">
+                    {{ period.start }} - {{ period.end }}
+                  </span>
+                  <span class="text-[10px] text-slate-500 block leading-tight">
+                    {{ period.type === 'major' ? 'Duration: 2 hours. Optimal feeding peak interval.' : 'Duration: 1 hour. Secondary activity burst.' }}
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- 24 HOUR TIMELINE CHART -->
+        <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-6 flex items-center space-x-2">
+            <svg class="h-4 w-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span>Hourly Activity Index</span>
+          </h2>
+
+          <!-- Visual Bar Chart -->
+          <div class="h-44 flex items-end justify-between gap-1 pt-6 border-b border-slate-800/50 pb-2 relative">
+            
+            <!-- Guideline lines in background -->
+            <div class="absolute inset-x-0 top-6 border-t border-slate-800/20 text-[9px] text-slate-600 pl-1">80% Peak</div>
+            <div class="absolute inset-x-0 top-20 border-t border-slate-800/20 text-[9px] text-slate-600 pl-1">50% Active</div>
+            <div class="absolute inset-x-0 top-32 border-t border-slate-800/20 text-[9px] text-slate-600 pl-1">20% Low</div>
+
+            @for (score of solunarData()!.hourlyActivity; track idx; let idx = $index) {
+              <div class="flex-1 flex flex-col items-center group relative h-full justify-end">
+                
+                <!-- Tooltip hover indicator -->
+                <div class="absolute bottom-full mb-1 bg-slate-900 border border-slate-700 rounded-md px-1.5 py-0.5 text-[8px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  {{ score }}% Activity
+                </div>
+
+                <!-- Vertical bar fill -->
+                <div
+                  [style.height.%]="score"
+                  class="w-full rounded-t transition-all duration-700 ease-out hover:brightness-110"
+                  [class.bg-teal-400]="score >= 80"
+                  [class.bg-emerald-500]="score >= 60 && score < 80"
+                  [class.bg-amber-500]="score >= 35 && score < 60"
+                  [class.bg-slate-700]="score < 35"
+                ></div>
+              </div>
+            }
+          </div>
+
+          <!-- Hours labels axis -->
+          <div class="flex justify-between text-[10px] text-slate-500 pt-2 font-mono px-0.5">
+            <span>12 AM</span>
+            <span>4 AM</span>
+            <span>8 AM</span>
+            <span>12 PM</span>
+            <span>4 PM</span>
+            <span>8 PM</span>
+            <span>11 PM</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  @}
+</div>

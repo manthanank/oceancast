@@ -1,0 +1,9 @@
+/* Solunar Calendar styling overrides */
+:host {
+  display: block;
+}
+
+/* Custom fade animation for the vertical activity bars */
+.bg-teal-400, .bg-emerald-500, .bg-amber-500, .bg-slate-700 {
+  min-height: 4px; /* Ensure even 0% shows a small indicator */
+}

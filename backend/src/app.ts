@@ -18,6 +18,7 @@ import aiRoutes from './routes/ai';
 import healthRoutes from './routes/health';
 import adminRoutes from './routes/admin';
 import mapRoutes from './routes/map';
+import solunarRoutes from './routes/solunar';
 
 const app = express();
 
@@ -80,6 +81,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/map', mapRoutes);
+app.use('/api/solunar', solunarRoutes);
 
 // Root route
 app.get('/', (req: Request, res: Response) => {

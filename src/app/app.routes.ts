@@ -40,6 +40,12 @@ export const routes: Routes = [
     title: 'Tidal Curves & High/Low Predictions - OceanCast',
   },
   {
+    path: 'solunar',
+    loadComponent: () => import('./pages/solunar/solunar').then((m) => m.Solunar),
+    canActivate: [authGuard],
+    title: 'Solunar Fishing Calendar & Peak Bite Hours - OceanCast',
+  },
+  {
     path: 'locations',
     loadComponent: () => import('./pages/locations/locations').then((m) => m.Locations),
     canActivate: [authGuard],
