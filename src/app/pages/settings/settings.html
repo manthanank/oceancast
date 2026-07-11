@@ -70,5 +70,33 @@
         </button>
       </div>
     </div>
+
+    <!-- WAVE HEIGHT UNIT SECTION -->
+    <div class="flex items-center justify-between pb-6 border-b border-slate-800/40">
+      <div>
+        <h3 class="text-md font-bold text-white">Wave Height Units</h3>
+        <p class="text-xs text-slate-400">Display wave and swell heights in your preferred unit</p>
+      </div>
+      <div class="flex bg-slate-950 border border-slate-800 rounded-xl p-1 select-none">
+        <button
+          (click)="changeWaveUnit('m')"
+          class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
+          [class.bg-cyan-500]="settingsService.settings().waveUnit === 'm'"
+          [class.text-slate-950]="settingsService.settings().waveUnit === 'm'"
+          [class.text-slate-400]="settingsService.settings().waveUnit !== 'm'"
+        >
+          Meters (m)
+        </button>
+        <button
+          (click)="changeWaveUnit('ft')"
+          class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
+          [class.bg-cyan-500]="settingsService.settings().waveUnit === 'ft'"
+          [class.text-slate-950]="settingsService.settings().waveUnit === 'ft'"
+          [class.text-slate-400]="settingsService.settings().waveUnit !== 'ft'"
+        >
+          Feet (ft)
+        </button>
+      </div>
+    </div>
   </div>
 </div>

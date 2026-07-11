@@ -31,6 +31,21 @@ const userSchema = new Schema(
       windWarnings: { type: Boolean, default: true },
       solunarAlerts: { type: Boolean, default: true },
     },
+    unitPrefs: {
+      tempUnit: { type: String, enum: ['C', 'F'], default: 'C' },
+      windUnit: { type: String, enum: ['kmh', 'ms', 'kt'], default: 'kmh' },
+      waveUnit: { type: String, enum: ['m', 'ft'], default: 'm' },
+    },
+    // Password reset
+    resetPasswordToken: { type: String, default: null },
+    resetPasswordExpiry: { type: Date, default: null },
+    // Email verification
+    emailVerified: { type: Boolean, default: false },
+    emailVerifyToken: { type: String, default: null },
+    // Login tracking & security
+    lastLoginAt: { type: Date, default: null },
+    loginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date, default: null },
   },
   {
     timestamps: true,

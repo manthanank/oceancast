@@ -59,6 +59,16 @@
             {{ metrics()?.memberSince | date:'longDate' }}
           </span>
         </div>
+
+        <!-- Last Login -->
+        @if (lastLoginAt()) {
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-400">Last Login:</span>
+            <span class="font-bold text-slate-200 font-mono text-right">
+              {{ lastLoginAt() | date:'medium' }}
+            </span>
+          </div>
+        }
       </div>
     </div>
 
@@ -158,6 +168,75 @@
           </div>
 
         </form>
+      </div>
+
+      <!-- CHANGE PASSWORD -->
+      <div class="bg-slate-900/30 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
+        <h3 class="text-md font-bold text-white">Change Password</h3>
+        <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="space-y-4">
+          <div class="space-y-1">
+            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Current Password</label>
+            <input type="password" formControlName="currentPassword" placeholder="Your current password"
+              class="block w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400/80 focus:ring-1 focus:ring-cyan-400/80 text-sm"
+              [class.border-rose-500]="passwordForm.get('currentPassword')?.touched && passwordForm.get('currentPassword')?.invalid"
+            />
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">New Password</label>
+              <input type="password" formControlName="newPassword" placeholder="At least 6 characters"
+                class="block w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400/80 focus:ring-1 focus:ring-cyan-400/80 text-sm"
+                [class.border-rose-500]="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.invalid"
+              />
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Confirm New Password</label>
+              <input type="password" formControlName="confirmPassword" placeholder="Repeat new password"
+                class="block w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400/80 focus:ring-1 focus:ring-cyan-400/80 text-sm"
+                [class.border-rose-500]="passwordForm.get('confirmPassword')?.touched && passwordForm.errors?.['passwordMismatch']"
+              />
+              @if (passwordForm.get('confirmPassword')?.touched && passwordForm.errors?.['passwordMismatch']) {
+                <p class="text-rose-400 text-xs mt-1">Passwords do not match.</p>
+              }
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-800/40">
+            <button type="submit" [disabled]="isChangingPassword()"
+              class="px-6 py-3 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-bold rounded-xl text-xs transition-all active:scale-[0.98] disabled:opacity-50">
+              @if (isChangingPassword()) { Updating... } @else { Update Password }
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- DANGER ZONE -->
+      <div class="bg-rose-950/20 border border-rose-900/40 p-6 rounded-2xl shadow-xl space-y-4">
+        <h3 class="text-md font-bold text-rose-400">⚠️ Danger Zone</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">Permanently deleting your account will remove all your saved locations, catch logs, and personal data. This action cannot be undone.</p>
+
+        @if (!showDeleteConfirm()) {
+          <button (click)="showDeleteConfirm.set(true)"
+            class="px-5 py-2.5 bg-rose-600/20 border border-rose-600/30 text-rose-400 hover:bg-rose-600/30 font-semibold rounded-xl text-xs transition-all">
+            Delete My Account
+          </button>
+        } @else {
+          <div class="space-y-3 p-4 bg-rose-950/30 rounded-xl border border-rose-800/30">
+            <p class="text-xs text-rose-300 font-semibold">Type <span class="font-mono bg-rose-900/40 px-1.5 py-0.5 rounded">DELETE</span> below to confirm:</p>
+            <input type="text" [(ngModel)]="deleteConfirmText" placeholder="Type DELETE"
+              class="block w-full px-4 py-2.5 bg-slate-950 border border-rose-800/40 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-rose-500 text-sm"
+            />
+            <div class="flex space-x-3">
+              <button (click)="deleteAccount()" [disabled]="deleteConfirmText !== 'DELETE' || isDeletingAccount()"
+                class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                @if (isDeletingAccount()) { Deleting... } @else { Permanently Delete }
+              </button>
+              <button type="button" (click)="showDeleteConfirm.set(false); deleteConfirmText = ''"
+                class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition-all">
+                Cancel
+              </button>
+            </div>
+          </div>
+        }
       </div>
 
     </div>

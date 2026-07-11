@@ -12,6 +12,12 @@ export interface User {
     windWarnings: boolean;
     solunarAlerts: boolean;
   };
+  unitPrefs?: {
+    tempUnit: 'C' | 'F';
+    windUnit: 'kmh' | 'ms' | 'kt';
+    waveUnit: 'm' | 'ft';
+  };
+  lastLoginAt?: string;
 }
 
 export interface AuthResponse {
@@ -50,8 +56,8 @@ export class AuthService {
   /**
    * Log in an existing user.
    */
-  public login(email: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>('/api/auth/login', { email, password }).pipe(
+  public login(email: string, password: string, rememberMe: boolean = false): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>('/api/auth/login', { email, password, rememberMe }).pipe(
       tap((res) => {
         this.saveToken(res.token);
         this.currentUser.set(res.user);

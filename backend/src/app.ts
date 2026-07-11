@@ -66,8 +66,20 @@ const limiter = rateLimit({
   message: { error: 'Too many requests from this IP, please try again after 15 minutes' },
 });
 
+// Stricter rate limiter specifically for auth endpoints (login, forgot-password)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Only 10 login/forgot-password attempts per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many authentication attempts. Please wait 15 minutes before trying again.' },
+});
+
 // Apply rate limiter to all API requests
 app.use('/api', limiter);
+// Apply stricter limiter to auth routes that are brute-force targets
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
 
 // Request body parsers
 app.use(express.json());

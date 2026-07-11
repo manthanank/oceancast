@@ -11,17 +11,15 @@ import { SettingsService } from '../../services/settings';
 export class Settings {
   public settingsService = inject(SettingsService);
 
-  /**
-   * Set temperature scale choice.
-   */
   public changeTempUnit(unit: 'C' | 'F'): void {
     this.settingsService.setTempUnit(unit);
   }
 
-  /**
-   * Set wind speed metric choice.
-   */
   public changeWindUnit(unit: 'kmh' | 'ms' | 'kt'): void {
     this.settingsService.setWindUnit(unit);
+  }
+
+  public changeWaveUnit(unit: 'm' | 'ft'): void {
+    this.settingsService.setWaveUnit(unit);
   }
 }

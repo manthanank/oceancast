@@ -3,16 +3,17 @@ import { Injectable, signal } from '@angular/core';
 export interface UserSettings {
   tempUnit: 'C' | 'F';
   windUnit: 'kmh' | 'ms' | 'kt';
+  waveUnit: 'm' | 'ft';
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class SettingsService {
-  // Signal containing the current user settings configuration
   public settings = signal<UserSettings>({
     tempUnit: 'C',
     windUnit: 'kmh',
+    waveUnit: 'm',
   });
 
   constructor() {
@@ -27,6 +28,7 @@ export class SettingsService {
         this.settings.set({
           tempUnit: parsed.tempUnit || 'C',
           windUnit: parsed.windUnit || 'kmh',
+          waveUnit: parsed.waveUnit || 'm',
         });
       } catch (e) {
         console.error('Failed to parse settings:', e);
@@ -34,19 +36,18 @@ export class SettingsService {
     }
   }
 
-  /**
-   * Update temperature unit preference.
-   */
   public setTempUnit(unit: 'C' | 'F'): void {
     this.settings.update(s => ({ ...s, tempUnit: unit }));
     this.saveSettings();
   }
 
-  /**
-   * Update wind speed unit preference.
-   */
   public setWindUnit(unit: 'kmh' | 'ms' | 'kt'): void {
     this.settings.update(s => ({ ...s, windUnit: unit }));
+    this.saveSettings();
+  }
+
+  public setWaveUnit(unit: 'm' | 'ft'): void {
+    this.settings.update(s => ({ ...s, waveUnit: unit }));
     this.saveSettings();
   }
 
@@ -54,9 +55,6 @@ export class SettingsService {
     localStorage.setItem('oceancast_settings', JSON.stringify(this.settings()));
   }
 
-  /**
-   * Formats a temperature value according to user preferences.
-   */
   public formatTemp(celsius: number): string {
     if (this.settings().tempUnit === 'F') {
       const fahrenheit = (celsius * 9) / 5 + 32;
@@ -65,18 +63,17 @@ export class SettingsService {
     return `${Math.round(celsius)}°C`;
   }
 
-  /**
-   * Formats a wind speed value according to user preferences.
-   */
   public formatWind(kmh: number): string {
     const unit = this.settings().windUnit;
-    if (unit === 'ms') {
-      const ms = kmh / 3.6;
-      return `${ms.toFixed(1)} m/s`;
-    } else if (unit === 'kt') {
-      const kt = kmh * 0.539957;
-      return `${kt.toFixed(1)} kt`;
-    }
+    if (unit === 'ms') return `${(kmh / 3.6).toFixed(1)} m/s`;
+    if (unit === 'kt') return `${(kmh * 0.539957).toFixed(1)} kt`;
     return `${Math.round(kmh)} km/h`;
+  }
+
+  public formatWave(meters: number): string {
+    if (this.settings().waveUnit === 'ft') {
+      return `${(meters * 3.28084).toFixed(1)} ft`;
+    }
+    return `${meters.toFixed(1)} m`;
   }
 }

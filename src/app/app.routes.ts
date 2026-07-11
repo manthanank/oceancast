@@ -13,6 +13,16 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/register/register').then((m) => m.Register),
     title: 'Create Account - OceanCast',
   },
+  {
+    path: 'forgot-password',
+    loadComponent: () => import('./pages/forgot-password/forgot-password').then((m) => m.ForgotPassword),
+    title: 'Forgot Password - OceanCast',
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () => import('./pages/reset-password/reset-password').then((m) => m.ResetPassword),
+    title: 'Reset Password - OceanCast',
+  },
 
   // Private Routes (Protected by AuthGuard)
   {
