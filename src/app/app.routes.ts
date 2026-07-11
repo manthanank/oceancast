@@ -46,6 +46,12 @@ export const routes: Routes = [
     title: 'Solunar Fishing Calendar & Peak Bite Hours - OceanCast',
   },
   {
+    path: 'catches',
+    loadComponent: () => import('./pages/catches/catches').then((m) => m.Catches),
+    canActivate: [authGuard],
+    title: 'Digital Catch Logbook & Smart Journal - OceanCast',
+  },
+  {
     path: 'locations',
     loadComponent: () => import('./pages/locations/locations').then((m) => m.Locations),
     canActivate: [authGuard],

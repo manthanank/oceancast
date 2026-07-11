@@ -1,0 +1,4 @@
+/* Catch logbook CSS overrides */
+:host {
+  display: block;
+}

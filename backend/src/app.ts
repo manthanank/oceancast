@@ -19,6 +19,7 @@ import healthRoutes from './routes/health';
 import adminRoutes from './routes/admin';
 import mapRoutes from './routes/map';
 import solunarRoutes from './routes/solunar';
+import catchRoutes from './routes/catches';
 
 const app = express();
 
@@ -82,6 +83,7 @@ app.use('/api/health', healthRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/map', mapRoutes);
 app.use('/api/solunar', solunarRoutes);
+app.use('/api/catches', catchRoutes);
 
 // Root route
 app.get('/', (req: Request, res: Response) => {
