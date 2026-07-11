@@ -1,3 +1,5 @@
+import { apiCache } from './cache';
+
 export interface WeatherData {
   current: {
     temp: number;
@@ -26,6 +28,10 @@ export interface WeatherData {
 }
 
 export const fetchWeatherData = async (latitude: number, longitude: number): Promise<WeatherData> => {
+  const cacheKey = `weather_${latitude.toFixed(2)}_${longitude.toFixed(2)}`;
+  const cached = apiCache.get<WeatherData>(cacheKey);
+  if (cached) return cached;
+
   const openMeteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum&timezone=auto`;
 
   const apiResponse = await fetch(openMeteoUrl);
@@ -36,7 +42,7 @@ export const fetchWeatherData = async (latitude: number, longitude: number): Pro
 
   const data = (await apiResponse.json()) as any;
 
-  return {
+  const result: WeatherData = {
     current: {
       temp: data.current.temperature_2m,
       windSpeed: data.current.wind_speed_10m,
@@ -62,4 +68,7 @@ export const fetchWeatherData = async (latitude: number, longitude: number): Pro
       precipProb: data.hourly.precipitation_probability[idx],
     })),
   };
+
+  apiCache.set(cacheKey, result, 600000);
+  return result;
 };

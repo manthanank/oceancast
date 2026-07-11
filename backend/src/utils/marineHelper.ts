@@ -13,23 +13,33 @@ export interface MarineData {
   }>;
 }
 
+import { apiCache } from './cache';
+
 export const fetchMarineData = async (latitude: number, longitude: number): Promise<MarineData> => {
+  const cacheKey = `marine_${latitude.toFixed(2)}_${longitude.toFixed(2)}`;
+  const cached = apiCache.get<MarineData>(cacheKey);
+  if (cached) return cached;
+
   const openMeteoMarineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${latitude}&longitude=${longitude}&current=wave_height,wave_direction,wave_period&hourly=wave_height,wave_direction,wave_period&timezone=auto`;
 
   const apiResponse = await fetch(openMeteoMarineUrl);
   
   if (!apiResponse.ok) {
     console.log(`Marine API returned status ${apiResponse.status} for lat=${latitude}, lon=${longitude}. Falling back to flat water representation.`);
-    return getLandLockedMarineData();
+    const fallback = getLandLockedMarineData();
+    apiCache.set(cacheKey, fallback, 600000);
+    return fallback;
   }
 
   const data = (await apiResponse.json()) as any;
 
   if (!data.current || data.current.wave_height === null || data.current.wave_height === undefined) {
-    return getLandLockedMarineData();
+    const fallback = getLandLockedMarineData();
+    apiCache.set(cacheKey, fallback, 600000);
+    return fallback;
   }
 
-  return {
+  const result: MarineData = {
     current: {
       waveHeight: data.current.wave_height || 0,
       waveDirection: data.current.wave_direction || 0,
@@ -43,6 +53,9 @@ export const fetchMarineData = async (latitude: number, longitude: number): Prom
       wavePeriod: data.hourly.wave_period[idx] || 0,
     })),
   };
+
+  apiCache.set(cacheKey, result, 600000);
+  return result;
 };
 
 function getLandLockedMarineData(): MarineData {
