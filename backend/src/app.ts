@@ -20,6 +20,7 @@ import adminRoutes from './routes/admin';
 import mapRoutes from './routes/map';
 import solunarRoutes from './routes/solunar';
 import catchRoutes from './routes/catches';
+import visibilityRoutes from './routes/visibility';
 
 const app = express();
 
@@ -84,6 +85,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/map', mapRoutes);
 app.use('/api/solunar', solunarRoutes);
 app.use('/api/catches', catchRoutes);
+app.use('/api/visibility', visibilityRoutes);
 
 // Root route
 app.get('/', (req: Request, res: Response) => {

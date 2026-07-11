@@ -1,0 +1,243 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none">
+  <!-- HEADER -->
+  <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+        Diving Visibility Forecast
+      </h1>
+      <p class="text-sm text-slate-400 mt-1">
+        Plan snorkeling and scuba diving activities with simulated coastal water clarity forecasts
+      </p>
+    </div>
+    
+    <!-- Controls -->
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Active Location Indicator -->
+      <div class="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-xs flex items-center">
+        <span class="text-slate-400 mr-2 font-medium">Spot:</span>
+        <span class="text-cyan-400 font-bold tracking-wide">{{ locationService.selectedLocation().name }}</span>
+      </div>
+
+      <!-- Date selector with adjustment arrows -->
+      <div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1">
+        <button
+          (click)="adjustDate(-1)"
+          class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+          title="Previous Day"
+        >
+          &larr;
+        </button>
+        
+        <input
+          type="date"
+          [value]="selectedDate()"
+          (change)="onDateChange($event)"
+          class="bg-transparent border-0 focus:ring-0 text-xs font-bold text-slate-200 px-3 cursor-pointer py-1 select-none"
+        />
+
+        <button
+          (click)="adjustDate(1)"
+          class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+          title="Next Day"
+        >
+          &rarr;
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- BODY CONTENT -->
+  @if (isLoading()) {
+    <app-spinner message="Evaluating swell churn, sediment dynamics, and tidal slack clarity..."></app-spinner>
+  } @else if (report()) {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+      
+      <!-- LEFT COLUMN: SCORE & DEPTH -->
+      <div class="lg:col-span-1 space-y-6">
+        
+        <!-- VISUAL CLARITY SCORE GAUGE -->
+        <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl flex flex-col items-center text-center">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-6 w-full text-left">
+            Clarity Index
+          </h2>
+
+          <!-- Radial Gauge Dial -->
+          <div class="relative w-40 h-40 flex items-center justify-center mb-4">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              <!-- Background ring -->
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke="#1e293b"
+                stroke-width="8"
+              ></circle>
+              <!-- Colored indicator ring -->
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                [attr.stroke]="report()!.visibilityScore >= 75 ? '#14b8a6' : (report()!.visibilityScore >= 50 ? '#10b981' : (report()!.visibilityScore >= 25 ? '#f59e0b' : '#ef4444'))"
+                stroke-width="8"
+                [attr.stroke-dasharray]="251.2"
+                [attr.stroke-dashoffset]="251.2 - (251.2 * report()!.visibilityScore / 100)"
+                stroke-linecap="round"
+                class="transition-all duration-1000 ease-out"
+              ></circle>
+            </svg>
+            <div class="absolute flex flex-col items-center justify-center">
+              <span class="text-4xl font-black text-white tracking-tight">
+                {{ report()!.visibilityScore }}%
+              </span>
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                Visibility
+              </span>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <h3
+              class="text-lg font-bold"
+              [class.text-teal-400]="report()!.visibilityScore >= 75"
+              [class.text-emerald-400]="report()!.visibilityScore >= 50 && report()!.visibilityScore < 75"
+              [class.text-amber-400]="report()!.visibilityScore >= 25 && report()!.visibilityScore < 50"
+              [class.text-rose-500]="report()!.visibilityScore < 25"
+            >
+              {{ report()!.rating }} Visibility
+            </h3>
+          </div>
+        </div>
+
+        <!-- VISUAL DEPTH GAUGE -->
+        <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl flex flex-col items-center">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-6 w-full text-left">
+            Estimated Visual Range
+          </h2>
+
+          <div class="text-center mb-6">
+            <span class="text-5xl font-black text-white tracking-tight font-mono">
+              {{ getFormattedDepth(report()!.visibilityMeters) }}
+            </span>
+            <span class="text-[10px] text-slate-500 font-bold block mt-1 uppercase tracking-wider">
+              Horizontal Visual Range
+            </span>
+          </div>
+
+          <!-- Vertical Beaker/Ruler depth indicator -->
+          <div class="w-20 h-44 bg-slate-950 border border-slate-800 rounded-xl relative p-1 overflow-hidden flex items-end">
+            <!-- Simulated water column fill -->
+            <div
+              [style.height.%]="report()!.visibilityScore"
+              class="w-full rounded-lg transition-all duration-1000 ease-out bg-gradient-to-t from-blue-700/80 to-cyan-500/50"
+            ></div>
+            
+            <!-- Measuring ticks overlay -->
+            <div class="absolute inset-y-0 right-2 flex flex-col justify-between text-[8px] text-slate-600 font-mono py-2 select-none">
+              <span>- 18m</span>
+              <span>- 12m</span>
+              <span>- 6m</span>
+              <span>- 0m</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: DETAILS & TIMELINE -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- CONDITIONS BRIEFING -->
+        <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
+            <span>📖</span>
+            <span>Clarity Advisory</span>
+          </h2>
+
+          <div class="space-y-4">
+            <!-- Conditions description -->
+            <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl">
+              <p class="text-sm font-semibold text-slate-200 leading-relaxed">
+                {{ report()!.conditionsReason }}
+              </p>
+            </div>
+
+            <!-- Dive statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Best Hour -->
+              <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl space-y-1">
+                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Optimal Clarity Hour</span>
+                <span class="text-md font-extrabold text-cyan-400 block tracking-wide">
+                  {{ report()!.bestDiveHour }}
+                </span>
+                <span class="text-[10px] text-slate-500 block leading-tight">
+                  Tide is slack and sediment settles, maximizing visibility.
+                </span>
+              </div>
+
+              <!-- General Dive Tips -->
+              <div class="p-4 bg-slate-950/40 border border-slate-800/60 rounded-xl space-y-1">
+                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Recommended Gear</span>
+                <span class="text-xs font-bold text-slate-350 block">
+                  🐠 Mask Defogger, dive flag buoy
+                </span>
+                <span class="text-[10px] text-slate-500 block leading-tight mt-1">
+                  Ensure you carry a safety flag float when diving near boating presences.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 24-HOUR HOURLY CLARITY TIMELINE -->
+        <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-6 flex items-center space-x-2">
+            <span>📈</span>
+            <span>Hourly Clarity Timeline</span>
+          </h2>
+
+          <!-- Vertical Bar Chart -->
+          <div class="h-40 flex items-end justify-between gap-1 pt-6 border-b border-slate-800/50 pb-2 relative">
+            <!-- Guidelines background -->
+            <div class="absolute inset-x-0 top-6 border-t border-slate-800/20 text-[9px] text-slate-600 pl-1">Clear (80%)</div>
+            <div class="absolute inset-x-0 top-20 border-t border-slate-800/20 text-[9px] text-slate-600 pl-1">Moderate (50%)</div>
+            <div class="absolute inset-x-0 top-32 border-t border-slate-800/20 text-[9px] text-slate-600 pl-1">Low (20%)</div>
+
+            @for (score of report()!.hourlyVisibility; track idx; let idx = $index) {
+              <div class="flex-1 flex flex-col items-center group relative h-full justify-end">
+                <!-- Tooltip hover -->
+                <div class="absolute bottom-full mb-1 bg-slate-900 border border-slate-700 rounded-md px-1.5 py-0.5 text-[8px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  {{ getFormattedDepth((score / 100) * 18) }} range
+                </div>
+
+                <!-- Vertical bar fill -->
+                <div
+                  [style.height.%]="score"
+                  class="w-full rounded-t transition-all duration-700 ease-out hover:brightness-110"
+                  [class.bg-teal-400]="score >= 75"
+                  [class.bg-emerald-500]="score >= 50 && score < 75"
+                  [class.bg-amber-500]="score >= 25 && score < 50"
+                  [class.bg-slate-700]="score < 25"
+                ></div>
+              </div>
+            }
+          </div>
+
+          <!-- Hours labels -->
+          <div class="flex justify-between text-[10px] text-slate-500 pt-2 font-mono px-0.5">
+            <span>12 AM</span>
+            <span>4 AM</span>
+            <span>8 AM</span>
+            <span>12 PM</span>
+            <span>4 PM</span>
+            <span>8 PM</span>
+            <span>11 PM</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  @}
+</div>

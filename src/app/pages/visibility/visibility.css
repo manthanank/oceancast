@@ -1,0 +1,4 @@
+/* Visibility page style defaults */
+:host {
+  display: block;
+}

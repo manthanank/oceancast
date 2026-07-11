@@ -105,6 +105,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
     title: 'Admin Management Console - OceanCast',
   },
+  {
+    path: 'visibility',
+    loadComponent: () => import('./pages/visibility/visibility').then((m) => m.Visibility),
+    canActivate: [authGuard],
+    title: 'Water Clarity & Diving Visibility Forecast - OceanCast',
+  },
 
   // Redirections and Wildcard
   {
