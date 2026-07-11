@@ -342,12 +342,52 @@ export class Locations implements OnInit, AfterViewInit, OnDestroy {
       const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=5&language=en&format=json`;
       this.http.get<any>(url).subscribe({
         next: (res) => {
-          this.geoSuggestions.set(res.results || []);
-          this.isSearchingGeo.set(false);
+          if (res.results && res.results.length > 0) {
+            this.geoSuggestions.set(res.results);
+            this.isSearchingGeo.set(false);
+          } else {
+            this.fallbackNominatim(name);
+          }
         },
-        error: () => this.isSearchingGeo.set(false),
+        error: () => this.fallbackNominatim(name),
       });
     }, 400);
+  }
+
+  /**
+   * Fallback using OpenStreetMap Nominatim geocoder API when Open-Meteo returns no matches.
+   */
+  private fallbackNominatim(name: string): void {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=5`;
+    this.http.get<any[]>(url).subscribe({
+      next: (res) => {
+        if (res && res.length > 0) {
+          const mapped = res.map((r: any, idx: number) => {
+            const parts = r.display_name.split(',');
+            const title = parts[0]?.trim() || '';
+            const country = parts[parts.length - 1]?.trim() || '';
+            const admin = parts[1]?.trim() || '';
+            
+            return {
+              id: `nominatim-${idx}-${Date.now()}`,
+              name: title,
+              admin1: admin !== country ? admin : '',
+              country: country,
+              latitude: parseFloat(r.lat),
+              longitude: parseFloat(r.lon)
+            };
+          });
+          this.geoSuggestions.set(mapped);
+        } else {
+          this.geoSuggestions.set([]);
+        }
+        this.isSearchingGeo.set(false);
+      },
+      error: () => {
+        this.geoSuggestions.set([]);
+        this.isSearchingGeo.set(false);
+      }
+    });
   }
 
   /**
