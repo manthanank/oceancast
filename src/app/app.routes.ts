@@ -64,6 +64,12 @@ export const routes: Routes = [
     title: 'AI Angler Briefing - OceanCast',
   },
   {
+    path: 'anchor',
+    loadComponent: () => import('./pages/anchor/anchor').then((m) => m.Anchor),
+    canActivate: [authGuard],
+    title: 'Anchor Watch Drag Alert Simulator - OceanCast',
+  },
+  {
     path: 'locations',
     loadComponent: () => import('./pages/locations/locations').then((m) => m.Locations),
     canActivate: [authGuard],

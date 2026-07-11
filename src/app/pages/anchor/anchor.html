@@ -1,0 +1,218 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 select-none animate-fade-in">
+  <!-- HEADER -->
+  <header class="mb-8 border-b border-slate-800 pb-4">
+    <h1 class="text-3xl font-extrabold tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+      Anchor Watch
+    </h1>
+    <p class="text-sm text-slate-400 mt-1">
+      Simulate boat anchor drift tracking. Receive sound alerts if your coordinates drift past the safety chain scope.
+    </p>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- LEFT PANEL: CONTROLS & COORDINATES -->
+    <div class="lg:col-span-1 space-y-6">
+      
+      <!-- DROP ANCHOR ACTIONS CARD -->
+      <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-5 w-full">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Anchor Coordinate Lock
+        </h2>
+
+        <!-- Coordinates Status display -->
+        <div class="p-4 bg-slate-950/50 border border-slate-800/60 rounded-xl space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-500 font-bold">Latitude</span>
+            <span class="font-mono text-white font-extrabold">{{ anchorLat() !== null ? anchorLat()!.toFixed(5) : 'Not Set' }}</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-500 font-bold">Longitude</span>
+            <span class="font-mono text-white font-extrabold">{{ anchorLon() !== null ? anchorLon()!.toFixed(5) : 'Not Set' }}</span>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <!-- Drop Anchor current GPS coordinates -->
+          <button
+            (click)="dropAnchorGPS()"
+            [disabled]="isArmed()"
+            class="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-850 transition-colors disabled:opacity-40"
+          >
+            <span>⚓</span>
+            <span>Lock Current GPS Position</span>
+          </button>
+
+          <!-- Select preset Active Spot coordinates -->
+          <button
+            (click)="useActiveLocation()"
+            [disabled]="isArmed()"
+            class="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-850 transition-colors disabled:opacity-40"
+          >
+            <span>📍</span>
+            <span>Use Active Spot Preset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SCOPE SAFETY LIMIT CARD -->
+      <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Safety Chain Scope Radius
+        </h2>
+
+        <div class="flex bg-slate-950 border border-slate-800 rounded-xl p-1 select-none">
+          <button
+            (click)="setRadius(15)"
+            [disabled]="isArmed()"
+            class="flex-1 py-2 text-[10px] font-bold rounded-lg transition-all"
+            [class.bg-cyan-500]="safetyRadius() === 15"
+            [class.text-slate-950]="safetyRadius() === 15"
+            [class.text-slate-400]="safetyRadius() !== 15"
+          >15m</button>
+          <button
+            (click)="setRadius(30)"
+            [disabled]="isArmed()"
+            class="flex-1 py-2 text-[10px] font-bold rounded-lg transition-all"
+            [class.bg-cyan-500]="safetyRadius() === 30"
+            [class.text-slate-950]="safetyRadius() === 30"
+            [class.text-slate-400]="safetyRadius() !== 30"
+          >30m</button>
+          <button
+            (click)="setRadius(50)"
+            [disabled]="isArmed()"
+            class="flex-1 py-2 text-[10px] font-bold rounded-lg transition-all"
+            [class.bg-cyan-500]="safetyRadius() === 50"
+            [class.text-slate-950]="safetyRadius() === 50"
+            [class.text-slate-400]="safetyRadius() !== 50"
+          >50m</button>
+          <button
+            (click)="setRadius(100)"
+            [disabled]="isArmed()"
+            class="flex-1 py-2 text-[10px] font-bold rounded-lg transition-all"
+            [class.bg-cyan-500]="safetyRadius() === 100"
+            [class.text-slate-950]="safetyRadius() === 100"
+            [class.text-slate-400]="safetyRadius() !== 100"
+          >100m</button>
+        </div>
+      </div>
+
+      <!-- ARM / DISARM TOGGLE BAR -->
+      <div class="bg-slate-900/30 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
+        @if (!isArmed()) {
+          <button
+            (click)="armAlert()"
+            [disabled]="anchorLat() === null"
+            class="w-full flex items-center justify-center space-x-2 py-4 px-4 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white rounded-xl text-sm font-bold shadow-lg transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span>🔴</span>
+            <span>ARM DRAG ALARM</span>
+          </button>
+        } @else {
+          <button
+            (click)="disarmAlert()"
+            class="w-full flex items-center justify-center space-x-2 py-4 px-4 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-bold shadow transition-all active:scale-[0.98]"
+          >
+            <span>🟢</span>
+            <span>DISARM ALARM SYSTEM</span>
+          </button>
+        }
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL: ALARM VISUALIZER SCOPE -->
+    <div class="lg:col-span-2 space-y-6">
+      
+      <div
+        class="bg-slate-900/30 border p-6 rounded-2xl shadow-xl flex flex-col items-center justify-between min-h-[460px] relative transition-colors duration-500"
+        [class.border-slate-800/80]="!isDragging()"
+        [class.border-rose-500/80]="isDragging()"
+        [class.bg-rose-950/10]="isDragging()"
+      >
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 w-full text-left">
+          Radar Scope Monitor
+        </h2>
+
+        <!-- STATUS PANEL WATERMARK -->
+        <div class="flex flex-col items-center text-center space-y-2 mt-4 z-10 w-full">
+          @if (!isArmed()) {
+            <span class="px-3 py-1 bg-slate-800 border border-slate-700 text-slate-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
+              System Offline
+            </span>
+            <p class="text-xs text-slate-500 max-w-sm mt-2">
+              Lock anchor coordinates and arm the system. Geolocation watcher will monitor boat position.
+            </p>
+          } @else {
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              <span
+                class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider animate-pulse"
+                [class.bg-green-500/25]="!isDragging()"
+                [class.text-green-400]="!isDragging()"
+                [class.border-green-500/30]="!isDragging()"
+                [class.bg-red-500/25]="isDragging()"
+                [class.text-red-400]="isDragging()"
+                [class.border-red-500/30]="isDragging()"
+              >
+                {{ isDragging() ? '🚨 Anchor Drag Alert' : '🟢 Vessel Safe within Scope' }}
+              </span>
+              @if (gpsAccuracy()) {
+                <span class="px-3 py-1 bg-slate-950/60 border border-slate-800 text-slate-500 font-mono rounded-lg text-[9px]">
+                  GPS Acc: ±{{ gpsAccuracy()!.toFixed(0) }}m
+                </span>
+              }
+            </div>
+
+            <!-- Large Distance tracker -->
+            <div class="space-y-1">
+              <span class="text-5xl font-black text-white tracking-tight font-mono">
+                {{ currentDistance() !== null ? currentDistance() + 'm' : '--' }}
+              </span>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+                Current Drift Distance (Limit: {{ safetyRadius() }}m)
+              </span>
+            </div>
+          }
+        </div>
+
+        <!-- CSS RADAR CIRCLES VISUALIZER -->
+        <div class="relative w-64 h-64 border border-slate-800/40 rounded-full flex items-center justify-center my-6 overflow-hidden bg-slate-950/20 shadow-inner">
+          <!-- Outer danger limit ring -->
+          <div class="absolute inset-4 border border-slate-800/60 rounded-full"></div>
+          <!-- Scope safety limit ring (Yellow/Orange) -->
+          <div class="absolute inset-16 border-2 border-amber-500/30 border-dashed rounded-full"></div>
+          <!-- Inner circle -->
+          <div class="absolute inset-28 border border-slate-800/30 rounded-full"></div>
+
+          <!-- Anchor Center Dot -->
+          <div class="absolute h-4 w-4 bg-cyan-400 border border-white rounded-full flex items-center justify-center text-[8px] text-slate-950 font-black shadow-lg" title="Anchor drop point">
+            ⚓
+          </div>
+
+          <!-- Moving Boat Indicator dot (Only if armed and coordinates fetched) -->
+          @if (isArmed() && currentDistance() !== null) {
+            <!-- Simulate a offset coordinates indicator based on real drift relative to radius limit -->
+            <div
+              class="absolute h-4 w-4 bg-white border-2 rounded-full flex items-center justify-center text-[8px] text-slate-900 font-bold transition-all duration-1000 ease-out shadow-lg"
+              [class.bg-green-400]="!isDragging()"
+              [class.bg-red-500]="isDragging()"
+              [style.top.%]="50 + (isDragging() ? -42 : -20)"
+              [style.left.%]="50 + (isDragging() ? 32 : 12)"
+              title="Vessel current location"
+            >
+              ⛵
+            </div>
+          }
+        </div>
+
+        <!-- Watermark warning -->
+        <div class="text-[10px] text-slate-600 font-mono text-center tracking-wide block mt-2">
+          SIMULATOR REQUIRES DEVICE GPS FOR ACTIVE POSITION MONITORING
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
