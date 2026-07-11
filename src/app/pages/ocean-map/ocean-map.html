@@ -6,7 +6,7 @@
         Ocean Map
       </h1>
       <p class="text-sm text-slate-400 mt-1">
-        Live wind arrows &amp; fishing zone conditions overlay
+        Live wind arrows, fishing safety zones &amp; sea surface temperature overlays
         @if (lastUpdated()) {
           <span class="text-slate-600 ml-2">· Updated {{ lastUpdated() }}</span>
         }
@@ -18,11 +18,11 @@
       <!-- Layer Toggle -->
       <div class="flex bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1">
         <button
-          (click)="setLayer('both')"
+          (click)="setLayer('all')"
           class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-          [class.bg-cyan-500]="activeLayer() === 'both'"
-          [class.text-slate-950]="activeLayer() === 'both'"
-          [class.text-slate-400]="activeLayer() !== 'both'"
+          [class.bg-cyan-500]="activeLayer() === 'all'"
+          [class.text-slate-950]="activeLayer() === 'all'"
+          [class.text-slate-400]="activeLayer() !== 'all'"
         >All Layers</button>
         <button
           (click)="setLayer('fishing')"
@@ -38,6 +38,13 @@
           [class.text-slate-950]="activeLayer() === 'wind'"
           [class.text-slate-400]="activeLayer() !== 'wind'"
         >💨 Wind Arrows</button>
+        <button
+          (click)="setLayer('sst')"
+          class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
+          [class.bg-cyan-500]="activeLayer() === 'sst'"
+          [class.text-slate-950]="activeLayer() === 'sst'"
+          [class.text-slate-400]="activeLayer() !== 'sst'"
+        >🌡️ SST Heatmap</button>
       </div>
 
       <!-- Pan to location -->
@@ -84,9 +91,9 @@
     }
 
     <!-- LEGEND -->
-    <div class="absolute bottom-6 right-4 z-[1000] bg-slate-900/95 border border-slate-800 rounded-2xl p-4 text-xs space-y-3 shadow-2xl backdrop-blur min-w-[170px]">
+    <div class="absolute bottom-6 right-4 z-[1000] bg-slate-900/95 border border-slate-800 rounded-2xl p-4 text-xs space-y-3 shadow-2xl backdrop-blur min-w-[170px] max-h-[320px] overflow-y-auto">
       <!-- Fishing zones legend -->
-      @if (activeLayer() === 'fishing' || activeLayer() === 'both') {
+      @if (activeLayer() === 'fishing' || activeLayer() === 'all') {
         <div class="space-y-1.5">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Fishing Zones</span>
           <div class="flex items-center gap-2">
@@ -105,7 +112,7 @@
       }
 
       <!-- Wind arrows legend -->
-      @if (activeLayer() === 'wind' || activeLayer() === 'both') {
+      @if (activeLayer() === 'wind' || activeLayer() === 'all') {
         <div class="space-y-1.5 pt-2 border-t border-slate-800">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Wind Speed</span>
           <div class="flex items-center gap-2">
@@ -121,6 +128,29 @@
             <span class="text-slate-300">&gt; 20 km/h — strong</span>
           </div>
           <p class="text-[10px] text-slate-600 pt-1">Arrow points in wind direction</p>
+        </div>
+      }
+
+      <!-- SST heatmap legend -->
+      @if (activeLayer() === 'sst' || activeLayer() === 'all') {
+        <div class="space-y-1.5 pt-2 border-t border-slate-800">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Sea Temp (SST)</span>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:#3b82f6; opacity: 0.5;"></span>
+            <span class="text-slate-300">Cold (&lt;15°C)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:#14b8a6; opacity: 0.5;"></span>
+            <span class="text-slate-300">Teal (15–20°C)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:#f59e0b; opacity: 0.5;"></span>
+            <span class="text-slate-300">Mild (20–25°C)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:#ef4444; opacity: 0.5;"></span>
+            <span class="text-slate-300">Warm (&gt;25°C)</span>
+          </div>
         </div>
       }
     </div>

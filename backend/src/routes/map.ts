@@ -8,12 +8,13 @@ interface GridPoint {
   windSpeed: number;
   windDir: number;
   waveHeight: number;
+  sst: number;
 }
 
 /**
  * GET /api/map/conditions?north=&south=&east=&west=
  * Samples a 4x4 grid of weather + marine conditions across a bounding box.
- * Used to render wind arrow overlays and fishing zone heat maps.
+ * Used to render wind arrow overlays, fishing zone heat maps, and SST maps.
  */
 router.get('/conditions', async (req: Request, res: Response): Promise<any> => {
   try {
@@ -58,7 +59,7 @@ router.get('/conditions', async (req: Request, res: Response): Promise<any> => {
             ),
             fetch(
               `https://marine-api.open-meteo.com/v1/marine?latitude=${pt.lat}&longitude=${pt.lon}` +
-              `&current=wave_height&format=json`
+              `&current=wave_height,sea_surface_temperature&format=json`
             ),
           ]);
 
@@ -71,10 +72,11 @@ router.get('/conditions', async (req: Request, res: Response): Promise<any> => {
             windSpeed: weather?.current?.wind_speed_10m ?? 0,
             windDir: weather?.current?.wind_direction_10m ?? 0,
             waveHeight: marine?.current?.wave_height ?? 0,
+            sst: marine?.current?.sea_surface_temperature ?? 21.0,
           };
         } catch {
           // Return zeroed point on individual failure — don't break entire grid
-          return { lat: pt.lat, lon: pt.lon, windSpeed: 0, windDir: 0, waveHeight: 0 };
+          return { lat: pt.lat, lon: pt.lon, windSpeed: 0, windDir: 0, waveHeight: 0, sst: 21.0 };
         }
       })
     );

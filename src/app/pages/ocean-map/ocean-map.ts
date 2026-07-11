@@ -20,6 +20,7 @@ interface GridPoint {
   windSpeed: number;
   windDir: number;
   waveHeight: number;
+  sst: number;
 }
 
 @Component({
@@ -38,7 +39,7 @@ export class OceanMap implements OnInit, AfterViewInit, OnDestroy {
 
   public isLoading = signal(false);
   public lastUpdated = signal<string | null>(null);
-  public activeLayer = signal<'wind' | 'fishing' | 'both'>('both');
+  public activeLayer = signal<'wind' | 'fishing' | 'sst' | 'all'>('all');
 
   private map!: L.Map;
   private overlayLayers: L.Layer[] = [];
@@ -151,11 +152,14 @@ export class OceanMap implements OnInit, AfterViewInit, OnDestroy {
     const layer = this.activeLayer();
 
     points.forEach(pt => {
-      if (layer === 'fishing' || layer === 'both') {
+      if (layer === 'fishing' || layer === 'all') {
         this.addFishingZoneCircle(pt);
       }
-      if (layer === 'wind' || layer === 'both') {
+      if (layer === 'wind' || layer === 'all') {
         this.addWindArrow(pt);
+      }
+      if (layer === 'sst' || layer === 'all') {
+        this.addSSTCircle(pt);
       }
     });
   }
@@ -232,6 +236,38 @@ export class OceanMap implements OnInit, AfterViewInit, OnDestroy {
     this.overlayLayers.push(marker);
   }
 
+  /**
+   * Colored semi-transparent circle showing Sea Surface Temperature (SST).
+   */
+  private addSSTCircle(pt: GridPoint): void {
+    const temp = pt.sst;
+
+    // Cold blue -> warm teal -> amber -> coral/red
+    const color = temp < 15 ? '#3b82f6' : (temp < 20 ? '#14b8a6' : (temp < 25 ? '#f59e0b' : '#ef4444'));
+    const fillOpacity = 0.25;
+
+    const zoom = this.map.getZoom();
+    const radius = Math.max(15000, 80000 / zoom);
+
+    const circle = L.circle([pt.lat, pt.lon], {
+      radius,
+      color,
+      fillColor: color,
+      fillOpacity,
+      weight: 1,
+      opacity: 0.4,
+    }).bindPopup(`
+      <div style="font-family:sans-serif;font-size:12px;min-width:130px;">
+        <b style="color:${color}">🌡️ Sea Surface Temp</b><br>
+        Temperature: <b>${this.settingsService.formatTemp(temp)}</b><br>
+        <span style="font-size:10px;color:#64748b">${pt.lat.toFixed(2)}°, ${pt.lon.toFixed(2)}°</span>
+      </div>
+    `);
+
+    circle.addTo(this.map);
+    this.overlayLayers.push(circle);
+  }
+
   /** Convert degrees to compass bearing label */
   public degToCompass(deg: number): string {
     const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
@@ -239,7 +275,7 @@ export class OceanMap implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /** Switch overlay and re-render */
-  public setLayer(layer: 'wind' | 'fishing' | 'both'): void {
+  public setLayer(layer: 'wind' | 'fishing' | 'sst' | 'all'): void {
     this.activeLayer.set(layer);
     this.loadGridData();
   }
