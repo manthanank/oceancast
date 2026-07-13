@@ -181,6 +181,18 @@
         </svg>
         <span>Log Out</span>
       </button>
+
+      <!-- Visitor Counter (Desktop Sidebar Footer) -->
+      <div class="px-3 pt-2 text-[10px] text-slate-500 border-t border-slate-900 flex items-center space-x-1.5 font-medium select-none">
+        <svg class="h-3.5 w-3.5 text-cyan-500/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+        @if (trackService.isLoading()) {
+          <span class="animate-pulse">Loading visits...</span>
+        } @else {
+          <span><strong class="text-slate-400 font-semibold font-mono">{{ trackService.uniqueVisitors() }}</strong> unique visitors</span>
+        }
+      </div>
     </div>
   </aside>
 
@@ -432,7 +444,16 @@
       </svg>
       <span class="text-lg font-bold tracking-wider bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">OceanCast</span>
     </div>
-    <div class="flex items-center space-x-3">
+    <div class="flex items-center space-x-4">
+      <!-- Visitor Count tag -->
+      <div class="hidden sm:flex items-center space-x-1.5 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-slate-400 text-[10px] font-semibold select-none">
+        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+        @if (trackService.isLoading()) {
+          <span class="text-slate-500">Checking...</span>
+        } @else {
+          <span>{{ trackService.uniqueVisitors() }} visitors</span>
+        }
+      </div>
       <a routerLink="/login" class="text-sm font-medium text-slate-300 hover:text-white px-3 py-1.5 rounded-lg transition-colors">Log In</a>
       <a routerLink="/register" class="text-sm font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 px-4 py-1.8 rounded-xl transition-all shadow-md shadow-cyan-500/10">Sign Up</a>
     </div>

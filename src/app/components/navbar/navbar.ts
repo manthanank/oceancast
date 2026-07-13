@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { NotificationService, NotificationItem } from '../../services/notification';
 import { DatePipe } from '@angular/common';
+import { TrackService } from '../../services/track';
 
 @Component({
   selector: 'app-navbar',
@@ -14,6 +15,7 @@ import { DatePipe } from '@angular/common';
 export class Navbar {
   public authService = inject(AuthService);
   public notificationService = inject(NotificationService);
+  public trackService = inject(TrackService);
   private router = inject(Router);
 
   // Mobile drawer state
