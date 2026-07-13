@@ -34,6 +34,11 @@ export class Profile implements OnInit {
   public metrics = signal<any | null>(null);
   public lastLoginAt = signal<string | null>(null);
 
+  // Toggle visibility of password inputs
+  public showCurrentPassword = signal<boolean>(false);
+  public showNewPassword = signal<boolean>(false);
+  public showConfirmPassword = signal<boolean>(false);
+
   // Personal details credentials form
   public profileForm: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],

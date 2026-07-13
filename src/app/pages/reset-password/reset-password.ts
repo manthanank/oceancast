@@ -27,6 +27,8 @@ export class ResetPassword implements OnInit {
   public isLoading = signal<boolean>(false);
   public success = signal<boolean>(false);
   public tokenInvalid = signal<boolean>(false);
+  public showPassword = signal<boolean>(false);
+  public showConfirmPassword = signal<boolean>(false);
   private token: string = '';
 
   public resetForm: FormGroup = this.fb.group(

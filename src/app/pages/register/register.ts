@@ -29,6 +29,9 @@ export class Register {
   // Signal to handle request loading indicator
   public isLoading = signal<boolean>(false);
 
+  // Toggle visibility of password input
+  public showPassword = signal<boolean>(false);
+
   public registerForm: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
