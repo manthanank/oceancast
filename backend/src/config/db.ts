@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
 
+// Disable internal buffering — fail fast if DB is not connected (better than 10s silent timeout)
+mongoose.set('bufferCommands', false);
+
+
 const connectDB = async (): Promise<void> => {
   try {
     const mongoURI = process.env.MONGODB_URI;
