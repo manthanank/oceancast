@@ -75,6 +75,8 @@ const authLimiter = rateLimit({
   message: { error: 'Too many authentication attempts. Please wait 15 minutes before trying again.' },
 });
 
+import connectDB from './config/db';
+
 // Apply rate limiter to all API requests
 app.use('/api', limiter);
 // Apply stricter limiter to auth routes that are brute-force targets
@@ -84,6 +86,17 @@ app.use('/api/auth/forgot-password', authLimiter);
 // Request body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Database connection verification middleware
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection middleware error:', err);
+    res.status(503).json({ error: 'Database is currently unavailable. Please try again shortly.' });
+  }
+});
 
 // Register routes
 app.use('/api/auth', authRoutes);

@@ -22,40 +22,47 @@ export const fetchMarineData = async (latitude: number, longitude: number): Prom
 
   const openMeteoMarineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${latitude}&longitude=${longitude}&current=wave_height,wave_direction,wave_period&hourly=wave_height,wave_direction,wave_period&timezone=auto`;
 
-  const apiResponse = await fetch(openMeteoMarineUrl);
-  
-  if (!apiResponse.ok) {
-    console.log(`Marine API returned status ${apiResponse.status} for lat=${latitude}, lon=${longitude}. Falling back to flat water representation.`);
+  try {
+    const apiResponse = await fetch(openMeteoMarineUrl);
+    
+    if (!apiResponse.ok) {
+      console.log(`Marine API returned status ${apiResponse.status} for lat=${latitude}, lon=${longitude}. Falling back to flat water representation.`);
+      const fallback = getLandLockedMarineData();
+      apiCache.set(cacheKey, fallback, 600000);
+      return fallback;
+    }
+
+    const data = (await apiResponse.json()) as any;
+
+    if (!data.current || data.current.wave_height === null || data.current.wave_height === undefined) {
+      const fallback = getLandLockedMarineData();
+      apiCache.set(cacheKey, fallback, 600000);
+      return fallback;
+    }
+
+    const result: MarineData = {
+      current: {
+        waveHeight: data.current.wave_height || 0,
+        waveDirection: data.current.wave_direction || 0,
+        wavePeriod: data.current.wave_period || 0,
+        time: data.current.time || new Date().toISOString(),
+      },
+      hourly: (data.hourly?.time || []).slice(0, 24).map((time: string, idx: number) => ({
+        time,
+        waveHeight: data.hourly.wave_height[idx] || 0,
+        waveDirection: data.hourly.wave_direction[idx] || 0,
+        wavePeriod: data.hourly.wave_period[idx] || 0,
+      })),
+    };
+
+    apiCache.set(cacheKey, result, 600000);
+    return result;
+  } catch (error) {
+    console.warn(`[Network Warning] Failed to connect to Marine API (lat=${latitude}, lon=${longitude}). Using local fallback:`, (error as Error).message);
     const fallback = getLandLockedMarineData();
     apiCache.set(cacheKey, fallback, 600000);
     return fallback;
   }
-
-  const data = (await apiResponse.json()) as any;
-
-  if (!data.current || data.current.wave_height === null || data.current.wave_height === undefined) {
-    const fallback = getLandLockedMarineData();
-    apiCache.set(cacheKey, fallback, 600000);
-    return fallback;
-  }
-
-  const result: MarineData = {
-    current: {
-      waveHeight: data.current.wave_height || 0,
-      waveDirection: data.current.wave_direction || 0,
-      wavePeriod: data.current.wave_period || 0,
-      time: data.current.time || new Date().toISOString(),
-    },
-    hourly: (data.hourly?.time || []).slice(0, 24).map((time: string, idx: number) => ({
-      time,
-      waveHeight: data.hourly.wave_height[idx] || 0,
-      waveDirection: data.hourly.wave_direction[idx] || 0,
-      wavePeriod: data.hourly.wave_period[idx] || 0,
-    })),
-  };
-
-  apiCache.set(cacheKey, result, 600000);
-  return result;
 };
 
 function getLandLockedMarineData(): MarineData {
