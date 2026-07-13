@@ -1,26 +1,29 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed, NgZone, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { ToastService } from '../../services/toast';
 import { AuthService } from '../../services/auth';
 import { Spinner } from '../../components/spinner/spinner';
+import type * as L from 'leaflet';
 
 @Component({
   selector: 'app-admin',
-  imports: [ReactiveFormsModule, Spinner, DatePipe],
+  imports: [ReactiveFormsModule, Spinner, DatePipe, DecimalPipe],
   templateUrl: './admin.html',
   styleUrl: './admin.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Admin implements OnInit {
+export class Admin implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private http = inject(HttpClient);
   private toastService = inject(ToastService);
   public authService = inject(AuthService);
 
+  private zone = inject(NgZone);
+
   // Tab management
-  public activeTab = signal<'users' | 'prompt' | 'presets' | 'announcement' | 'thresholds' | 'logs' | 'backup'>('users');
+  public activeTab = signal<'users' | 'prompt' | 'presets' | 'announcement' | 'thresholds' | 'logs' | 'backup' | 'map'>('users');
 
   // Admin states
   public users = signal<any[]>([]);
@@ -66,6 +69,21 @@ export class Admin implements OnInit {
 
   // Selected preset for interactive radar display
   public activeRadarPreset = signal<any | null>(null);
+
+  // Map Intelligence signals
+  public mapLocations = signal<any[]>([]);
+  public topLocations = signal<any[]>([]);
+  public mapStats = signal<{ totalLocations: number; uniqueUsers: number; countryClusters: number; mostActiveRegion: string }>({
+    totalLocations: 0, uniqueUsers: 0, countryClusters: 0, mostActiveRegion: '—'
+  });
+  public mapLayerMode = signal<'standard' | 'satellite' | 'topo'>('standard');
+  public showHeatmap = signal<boolean>(false);
+  public showClusters = signal<boolean>(true);
+  private leafletMap: any = null;
+  private tileLayer: any = null;
+  private markerLayer: any = null;
+  private heatLayer: any = null;
+  private mapInitialized = false;
 
   // Preset location form
   public presetForm: FormGroup = this.fb.group({
@@ -118,9 +136,13 @@ export class Admin implements OnInit {
   /**
    * Set active tab and trigger dynamic fetch logic.
    */
-  public selectTab(tab: 'users' | 'prompt' | 'presets' | 'announcement' | 'thresholds' | 'logs' | 'backup'): void {
+  public selectTab(tab: 'users' | 'prompt' | 'presets' | 'announcement' | 'thresholds' | 'logs' | 'backup' | 'map'): void {
     this.activeTab.set(tab);
     this.fetchTabDetails(tab);
+    // Re-init map after angular renders the container
+    if (tab === 'map') {
+      setTimeout(() => this.initMap(), 150);
+    }
   }
 
   private fetchTabDetails(tab: string): void {
@@ -191,6 +213,17 @@ export class Admin implements OnInit {
       });
     } else if (tab === 'backup') {
       this.isLoading.set(false);
+    } else if (tab === 'map') {
+      this.http.get<any>('/api/admin/map-data').subscribe({
+        next: (res) => {
+          this.mapLocations.set(res.locations || []);
+          this.topLocations.set([...(res.locations || [])].sort((a, b) => b.saveCount - a.saveCount).slice(0, 20));
+          this.mapStats.set(res.stats || { totalLocations: 0, uniqueUsers: 0, countryClusters: 0, mostActiveRegion: '—' });
+          this.isLoading.set(false);
+          setTimeout(() => this.initMap(), 200);
+        },
+        error: () => this.isLoading.set(false),
+      });
     }
   }
 
@@ -370,7 +403,6 @@ export class Admin implements OnInit {
       this.http.delete(`/api/admin/users/${userId}`).subscribe({
         next: () => {
           this.toastService.show(`User "${targetUser.name}" deleted successfully`, 'success');
-          // Remove from local user list signal state
           this.users.set(this.users().filter((u) => u._id !== userId));
         },
         error: (err) => {
@@ -378,6 +410,229 @@ export class Admin implements OnInit {
           this.toastService.show(errMsg, 'error');
         },
       });
+    }
+  }
+
+  // ─── Leaflet Map Methods ────────────────────────────────────────
+
+  private async initMap(): Promise<void> {
+    const container = document.getElementById('admin-map');
+    if (!container) return;
+
+    // Dynamically import Leaflet
+    const L = await import('leaflet') as any;
+
+    // Destroy existing map instance if re-initializing
+    if (this.leafletMap) {
+      this.leafletMap.remove();
+      this.leafletMap = null;
+    }
+
+    this.zone.runOutsideAngular(() => {
+      // Initialize map centered on world view
+      this.leafletMap = L.map('admin-map', {
+        center: [20, 0],
+        zoom: 2,
+        zoomControl: true,
+        attributionControl: true,
+      });
+
+      this.setTileLayer(L);
+      this.plotMarkers(L);
+
+      // Add scale control
+      L.control.scale({ imperial: false, position: 'bottomright' }).addTo(this.leafletMap);
+    });
+  }
+
+  private setTileLayer(L: any): void {
+    if (this.tileLayer) {
+      this.tileLayer.remove();
+    }
+
+    const mode = this.mapLayerMode();
+    let tileUrl = '';
+    let attribution = '';
+
+    if (mode === 'satellite') {
+      tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+      attribution = '© Esri World Imagery';
+    } else if (mode === 'topo') {
+      tileUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+      attribution = '© OpenTopoMap contributors';
+    } else {
+      // Dark ocean-themed CartoDB Dark Matter
+      tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      attribution = '© OpenStreetMap © CartoDB';
+    }
+
+    this.tileLayer = L.tileLayer(tileUrl, { attribution, maxZoom: 18 }).addTo(this.leafletMap);
+  }
+
+  private plotMarkers(L: any): void {
+    if (this.markerLayer) {
+      this.markerLayer.remove();
+    }
+
+    const locations = this.mapLocations();
+    if (!locations.length) return;
+
+    const markers: any[] = [];
+
+    if (this.showClusters()) {
+      // Group by proximity (5deg grid)
+      const grid: Record<string, any[]> = {};
+      locations.forEach((loc) => {
+        const key = `${Math.round(loc.lat / 3) * 3},${Math.round(loc.lon / 3) * 3}`;
+        if (!grid[key]) grid[key] = [];
+        grid[key].push(loc);
+      });
+
+      Object.entries(grid).forEach(([key, group]) => {
+        const avgLat = group.reduce((s, l) => s + l.lat, 0) / group.length;
+        const avgLon = group.reduce((s, l) => s + l.lon, 0) / group.length;
+        const count = group.length;
+        const size = Math.min(20 + count * 6, 60);
+
+        const clusterIcon = L.divIcon({
+          className: '',
+          html: `<div style="
+            width:${size}px;height:${size}px;
+            background:rgba(6,182,212,0.75);
+            border:2px solid rgba(6,182,212,1);
+            border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            font-weight:800;font-size:${count > 9 ? 11 : 13}px;
+            color:#0a0f1e;
+            box-shadow:0 0 12px rgba(6,182,212,0.6);
+            backdrop-filter:blur(4px);
+          ">${count}</div>`,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+        });
+
+        const marker = L.marker([avgLat, avgLon], { icon: clusterIcon })
+          .bindPopup(
+            `<div style="font-family:system-ui;font-size:12px;min-width:160px">
+              <strong style="color:#06b6d4">${count} Location${count > 1 ? 's' : ''}</strong><br/>
+              <span style="color:#94a3b8">in this area</span><br/><br/>
+              ${group.slice(0, 4).map(l => `<div style="color:#f1f5f9">📍 ${l.name} <span style="color:#64748b;font-size:10px">(${l.userName})</span></div>`).join('')}
+              ${count > 4 ? `<div style="color:#64748b;font-size:10px">+${count - 4} more…</div>` : ''}
+            </div>`,
+            { maxWidth: 250 }
+          );
+        markers.push(marker);
+      });
+    } else {
+      // Individual glowing dot markers
+      locations.forEach((loc) => {
+        const dotIcon = L.divIcon({
+          className: '',
+          html: `<div style="
+            width:12px;height:12px;
+            background:#06b6d4;
+            border:2px solid #22d3ee;
+            border-radius:50%;
+            box-shadow:0 0 8px rgba(6,182,212,0.8);
+          "></div>`,
+          iconSize: [12, 12],
+          iconAnchor: [6, 6],
+        });
+
+        const marker = L.marker([loc.lat, loc.lon], { icon: dotIcon })
+          .bindPopup(
+            `<div style="font-family:system-ui;font-size:12px">
+              <strong style="color:#06b6d4">📍 ${loc.name}</strong><br/>
+              <span style="color:#94a3b8">By: ${loc.userName}</span><br/>
+              <span style="color:#64748b;font-size:10px">${loc.lat.toFixed(4)}°, ${loc.lon.toFixed(4)}°</span>
+            </div>`
+          );
+        markers.push(marker);
+      });
+    }
+
+    this.markerLayer = L.layerGroup(markers).addTo(this.leafletMap);
+
+    // Draw heatmap if enabled
+    if (this.showHeatmap()) {
+      this.drawHeatmap(L);
+    }
+  }
+
+  private drawHeatmap(L: any): void {
+    // Use circle overlays to simulate a heatmap effect (no plugin needed)
+    const heatCircles: any[] = [];
+    this.mapLocations().forEach((loc) => {
+      const circle = L.circle([loc.lat, loc.lon], {
+        radius: 150000, // ~150km radius
+        color: 'transparent',
+        fillColor: '#06b6d4',
+        fillOpacity: 0.07,
+        weight: 0,
+      });
+      heatCircles.push(circle);
+    });
+    this.heatLayer = L.layerGroup(heatCircles).addTo(this.leafletMap);
+  }
+
+  public onMapLayerChange(mode: 'standard' | 'satellite' | 'topo'): void {
+    this.mapLayerMode.set(mode);
+    if (!this.leafletMap) return;
+    import('leaflet').then((L: any) => {
+      this.setTileLayer(L);
+    });
+  }
+
+  public toggleHeatmap(): void {
+    this.showHeatmap.update(v => !v);
+    if (!this.leafletMap) return;
+    import('leaflet').then((L: any) => {
+      if (this.heatLayer) {
+        this.heatLayer.remove();
+        this.heatLayer = null;
+      }
+      if (this.showHeatmap()) this.drawHeatmap(L);
+    });
+  }
+
+  public toggleClusters(): void {
+    this.showClusters.update(v => !v);
+    if (!this.leafletMap) return;
+    import('leaflet').then((L: any) => this.plotMarkers(L));
+  }
+
+  public zoomToLocation(lat: number, lon: number): void {
+    if (!this.leafletMap) return;
+    this.leafletMap.flyTo([lat, lon], 10, { duration: 1.2 });
+  }
+
+  public fitAllMarkers(): void {
+    if (!this.leafletMap || !this.mapLocations().length) return;
+    import('leaflet').then((L: any) => {
+      const bounds = L.latLngBounds(this.mapLocations().map((l) => [l.lat, l.lon]));
+      this.leafletMap.fitBounds(bounds, { padding: [40, 40] });
+    });
+  }
+
+  public exportMapCsv(): void {
+    const rows = ['Name,Latitude,Longitude,User'];
+    this.mapLocations().forEach((l) => {
+      rows.push(`"${l.name}",${l.lat},${l.lon},"${l.userName}"`);
+    });
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'oceancast_locations.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    this.toastService.show('Locations exported as CSV', 'success');
+  }
+
+  public ngOnDestroy(): void {
+    if (this.leafletMap) {
+      this.leafletMap.remove();
+      this.leafletMap = null;
     }
   }
 }

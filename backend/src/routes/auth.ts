@@ -127,22 +127,7 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/me - Get user profile (Protected)
 router.get('/me', authenticateToken as any, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
-    let user = await User.findById(req.userId).select('-password -resetPasswordToken -emailVerifyToken');
-
-    // Automatically provision guest profile if guest token is authenticated
-    if (!user && req.userId === '660000000000000000000000') {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('guest_fisherman_secret_pwd_998', salt);
-      user = new User({
-        _id: '660000000000000000000000',
-        name: 'Guest Fisherman',
-        email: 'guest@oceancast.local',
-        password: hashedPassword,
-        role: 'standard',
-        preferences: { swellWarnings: true, windWarnings: true, solunarAlerts: true },
-      });
-      await user.save();
-    }
+    const user = await User.findById(req.userId).select('-password -resetPasswordToken -emailVerifyToken');
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

@@ -19,12 +19,6 @@ export const authenticateToken = (
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  // Guest Token bypass for tech-free fishermen access
-  if (token === 'guest_jwt_token_mock') {
-    req.userId = '660000000000000000000000';
-    return next();
-  }
-
   try {
     const secret = process.env.JWT_SECRET || 'oceancast_jwt_secret_token_key';
     const decoded = jwt.verify(token, secret) as { userId: string };

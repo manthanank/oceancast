@@ -359,4 +359,60 @@ router.post('/restore', authenticateToken as any, requireAdmin as any, async (re
   }
 });
 
+// GET /api/admin/map-data - All saved locations with user info for admin map (Admin only)
+router.get('/map-data', authenticateToken as any, requireAdmin as any, async (req, res) => {
+  try {
+    // Fetch all locations with user name lookup
+    const locations = await Location.find({}).lean();
+    const userIds = [...new Set(locations.map((l: any) => l.userId?.toString()).filter(Boolean))];
+    const users = await User.find({ _id: { $in: userIds } }).select('name email').lean();
+    const userMap: Record<string, string> = {};
+    (users as any[]).forEach((u: any) => { userMap[u._id.toString()] = u.name; });
+
+    const enriched = locations.map((loc: any) => ({
+      _id: loc._id,
+      name: loc.name,
+      lat: loc.lat,
+      lon: loc.lon,
+      userId: loc.userId,
+      userName: userMap[loc.userId?.toString()] || 'Unknown',
+      saveCount: 1,
+      createdAt: loc.createdAt,
+    }));
+
+    // Compute basic stats
+    const totalLocations = enriched.length;
+    const uniqueUsers = new Set(locations.map((l: any) => l.userId?.toString())).size;
+
+    // Rough country cluster by rounding lat/lon to 5deg grid
+    const regionSet = new Set(
+      enriched.map((l) => `${Math.round(l.lat / 5) * 5},${Math.round(l.lon / 5) * 5}`)
+    );
+
+    // Most active region (most locations)
+    const regionCount: Record<string, number> = {};
+    enriched.forEach((l) => {
+      const key = `${Math.round(l.lat / 5) * 5},${Math.round(l.lon / 5) * 5}`;
+      regionCount[key] = (regionCount[key] || 0) + 1;
+    });
+    const mostActiveEntry = Object.entries(regionCount).sort((a, b) => b[1] - a[1])[0];
+    const mostActiveRegion = mostActiveEntry
+      ? `${mostActiveEntry[1]} pts`
+      : '—';
+
+    return res.json({
+      locations: enriched,
+      stats: {
+        totalLocations,
+        uniqueUsers,
+        countryClusters: regionSet.size,
+        mostActiveRegion,
+      },
+    });
+  } catch (error) {
+    console.error('Map data error:', error);
+    return res.status(500).json({ error: 'Server error fetching map data' });
+  }
+});
+
 export default router;

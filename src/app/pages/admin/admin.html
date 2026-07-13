@@ -82,6 +82,16 @@
     >
       💾 Backup / restore
     </button>
+    <button
+      (click)="selectTab('map')"
+      class="px-5 py-3 border-b-2 text-xs md:text-sm font-bold transition-all focus:outline-none shrink-0"
+      [class.border-cyan-400]="activeTab() === 'map'"
+      [class.text-cyan-400]="activeTab() === 'map'"
+      [class.border-transparent]="activeTab() !== 'map'"
+      [class.text-slate-400]="activeTab() !== 'map'"
+    >
+      🗺️ Map Intelligence
+    </button>
   </div>
 
   <!-- LOADER overlay -->
@@ -513,6 +523,140 @@
             />
           </div>
         </div>
+      </div>
+    }
+
+    <!-- 8. MAP INTELLIGENCE TAB -->
+    @if (activeTab() === 'map') {
+      <div class="space-y-6 animate-fade-in">
+
+        <!-- Header banner -->
+        <div class="bg-gradient-to-r from-cyan-500/10 to-blue-600/10 border border-cyan-500/20 rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+              <span>🗺️</span><span>Map Intelligence</span>
+              <span class="ml-2 px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold rounded-full uppercase tracking-wider">Admin Only</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Visual overview of all user-saved locations, heatmaps, and global activity across OceanCast</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button (click)="onMapLayerChange('standard')"
+              class="px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all"
+              [class.bg-cyan-500]="mapLayerMode() === 'standard'"
+              [class.text-slate-950]="mapLayerMode() === 'standard'"
+              [class.bg-slate-800]="mapLayerMode() !== 'standard'"
+              [class.text-slate-400]="mapLayerMode() !== 'standard'">
+              🌑 Dark Ocean
+            </button>
+            <button (click)="onMapLayerChange('satellite')"
+              class="px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all"
+              [class.bg-cyan-500]="mapLayerMode() === 'satellite'"
+              [class.text-slate-950]="mapLayerMode() === 'satellite'"
+              [class.bg-slate-800]="mapLayerMode() !== 'satellite'"
+              [class.text-slate-400]="mapLayerMode() !== 'satellite'">
+              🛰️ Satellite
+            </button>
+            <button (click)="onMapLayerChange('topo')"
+              class="px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all"
+              [class.bg-cyan-500]="mapLayerMode() === 'topo'"
+              [class.text-slate-950]="mapLayerMode() === 'topo'"
+              [class.bg-slate-800]="mapLayerMode() !== 'topo'"
+              [class.text-slate-400]="mapLayerMode() !== 'topo'">
+              🏔️ Topo
+            </button>
+          </div>
+        </div>
+
+        <!-- Map stats row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-4 text-center">
+            <div class="text-2xl font-black text-cyan-400">{{ mapStats().totalLocations }}</div>
+            <div class="text-xs text-slate-400 mt-1">Total Saved Locations</div>
+          </div>
+          <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-4 text-center">
+            <div class="text-2xl font-black text-blue-400">{{ mapStats().uniqueUsers }}</div>
+            <div class="text-xs text-slate-400 mt-1">Active Users w/ Locations</div>
+          </div>
+          <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-4 text-center">
+            <div class="text-2xl font-black text-emerald-400">{{ mapStats().countryClusters }}</div>
+            <div class="text-xs text-slate-400 mt-1">Country / Region Clusters</div>
+          </div>
+          <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-4 text-center">
+            <div class="text-2xl font-black text-amber-400">{{ mapStats().mostActiveRegion }}</div>
+            <div class="text-xs text-slate-400 mt-1">Top Active Region</div>
+          </div>
+        </div>
+
+        <!-- The Map itself -->
+        <div class="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div class="p-4 border-b border-slate-800 flex flex-wrap items-center gap-3 justify-between">
+            <h3 class="text-sm font-bold text-white">📍 All User-Saved Locations</h3>
+            <div class="flex items-center flex-wrap gap-3">
+              <label class="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none">
+                <input type="checkbox" [checked]="showHeatmap()" (change)="toggleHeatmap()" class="rounded border-slate-700 bg-slate-950 text-cyan-500" />
+                <span>🔥 Heatmap</span>
+              </label>
+              <label class="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none">
+                <input type="checkbox" [checked]="showClusters()" (change)="toggleClusters()" class="rounded border-slate-700 bg-slate-950 text-cyan-500" />
+                <span>⬤ Clusters</span>
+              </label>
+              <button (click)="fitAllMarkers()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition-all">
+                🔭 Fit All
+              </button>
+              <button (click)="exportMapCsv()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition-all">
+                ⬇️ Export CSV
+              </button>
+            </div>
+          </div>
+          <!-- Leaflet Map Container -->
+          <div id="admin-map" class="w-full" style="height: 520px; background: #0a0f1e;"></div>
+        </div>
+
+        <!-- Location breakdown table -->
+        <div class="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white">📊 Top Saved Locations</h3>
+            <span class="text-xs text-slate-500">Across all users</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
+                  <th class="px-4 py-3 text-left font-bold">#</th>
+                  <th class="px-4 py-3 text-left font-bold">Location Name</th>
+                  <th class="px-4 py-3 text-left font-bold">Coordinates</th>
+                  <th class="px-4 py-3 text-left font-bold">User</th>
+                  <th class="px-4 py-3 text-right font-bold">Saves</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (loc of topLocations(); track loc._id; let i = $index) {
+                  <tr
+                    (click)="zoomToLocation(loc.lat, loc.lon)"
+                    class="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors cursor-pointer group"
+                    title="Click to zoom map to this location">
+                    <td class="px-4 py-3 text-slate-500 font-mono">{{ i + 1 }}</td>
+                    <td class="px-4 py-3 text-white font-semibold flex items-center space-x-2">
+                      <span class="opacity-0 group-hover:opacity-100 transition-opacity text-cyan-400 text-xs">🎯</span>
+                      <span>{{ loc.name }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-slate-400 font-mono text-[10px]">{{ loc.lat | number:'1.4-4' }}°, {{ loc.lon | number:'1.4-4' }}°</td>
+                    <td class="px-4 py-3 text-cyan-400">{{ loc.userName || 'Unknown' }}</td>
+                    <td class="px-4 py-3 text-right">
+                      <span class="px-2 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full text-[10px] font-bold">{{ loc.saveCount }}</span>
+                    </td>
+                  </tr>
+                }
+                @empty {
+                  <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-slate-500">No location data available</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     }
   }
