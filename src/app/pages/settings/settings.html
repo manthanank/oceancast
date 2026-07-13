@@ -98,5 +98,59 @@
         </button>
       </div>
     </div>
+
+    <!-- NOTIFICATION PREFERENCES SECTION -->
+    <div class="pt-4">
+      <h2 class="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+        <span>🔔</span> <span>Notification Preferences</span>
+      </h2>
+      
+      @if (authService.isAuthenticated()) {
+        <div class="space-y-4">
+          <!-- Swell alerts checkbox -->
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800/20 cursor-pointer select-none" (click)="toggleNotification('swellWarnings')">
+            <div>
+              <span class="font-bold text-sm text-slate-200 block">Marine Swell Alerts</span>
+              <span class="text-xs text-slate-400">Warns you when coastal swell wave heights exceed dynamic surfing minimums.</span>
+            </div>
+            <input
+              type="checkbox"
+              [checked]="settingsService.notificationPrefs().swellWarnings"
+              class="h-5 w-5 bg-slate-950 border border-slate-800 rounded text-cyan-500 focus:ring-0 focus:ring-offset-0 pointer-events-none"
+            />
+          </div>
+
+          <!-- Wind alerts checkbox -->
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800/20 cursor-pointer select-none" (click)="toggleNotification('windWarnings')">
+            <div>
+              <span class="font-bold text-sm text-slate-200 block">Gale &amp; Crosswind Warnings</span>
+              <span class="text-xs text-slate-400">Alerts you of gusty breezes when planning motorcycle touring index bounds.</span>
+            </div>
+            <input
+              type="checkbox"
+              [checked]="settingsService.notificationPrefs().windWarnings"
+              class="h-5 w-5 bg-slate-950 border border-slate-800 rounded text-cyan-500 focus:ring-0 focus:ring-offset-0 pointer-events-none"
+            />
+          </div>
+
+          <!-- Solunar alerts checkbox -->
+          <div class="flex items-center justify-between pb-4 cursor-pointer select-none" (click)="toggleNotification('solunarAlerts')">
+            <div>
+              <span class="font-bold text-sm text-slate-200 block">Solunar Activity Alerts</span>
+              <span class="text-xs text-slate-400">Warns you before major feeding windows to optimize fishing catch potential.</span>
+            </div>
+            <input
+              type="checkbox"
+              [checked]="settingsService.notificationPrefs().solunarAlerts"
+              class="h-5 w-5 bg-slate-950 border border-slate-800 rounded text-cyan-500 focus:ring-0 focus:ring-offset-0 pointer-events-none"
+            />
+          </div>
+        </div>
+      } @else {
+        <div class="p-4 bg-slate-950/60 border border-slate-800 rounded-xl text-center">
+          <p class="text-xs text-slate-400">Please <a routerLink="/login" class="text-cyan-400 font-bold hover:underline">log in</a> to customize your personalized alert warnings.</p>
+        </div>
+      }
+    </div>
   </div>
 </div>

@@ -127,6 +127,25 @@
           <span>OceanCast AI</span>
         </a>
 
+        <button
+          (click)="toggleNotificationsPanel()"
+          class="flex items-center w-full space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-900 hover:text-white transition-all text-sm text-left relative focus:outline-none"
+          [class.bg-cyan-500\/10]="isNotificationsOpen()"
+          [class.text-cyan-400]="isNotificationsOpen()"
+        >
+          <div class="relative flex items-center">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            @if (notificationService.unreadCount() > 0) {
+              <span class="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-cyan-500 text-[9px] font-black text-slate-950 animate-bounce">
+                {{ notificationService.unreadCount() }}
+              </span>
+            }
+          </div>
+          <span>Notifications</span>
+        </button>
+
         @if (authService.currentUser()?.role === 'admin') {
           <a routerLink="/admin" routerLinkActive="bg-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400 font-semibold" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-900 hover:text-white transition-all text-sm">
             <svg class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -359,6 +378,23 @@
           <span class="text-xs font-bold text-white block">Settings</span>
           <span class="text-[9px] text-slate-500 leading-none">Preferences &amp; unit sets</span>
         </a>
+
+        <!-- Mobile Notifications link -->
+        <button
+          (click)="closeMobileMenu(); toggleNotificationsPanel()"
+          class="flex flex-col p-4 bg-slate-900/50 border border-slate-800/80 rounded-2xl hover:bg-slate-900 transition-all text-left space-y-2 col-span-2 relative focus:outline-none w-full"
+        >
+          <div class="flex items-center justify-between w-full">
+            <span class="text-xl">🔔</span>
+            @if (notificationService.unreadCount() > 0) {
+              <span class="px-2 py-0.5 rounded-full bg-cyan-500 text-slate-950 font-black text-[9px] uppercase tracking-wider animate-pulse">
+                {{ notificationService.unreadCount() }} New Alert{{ notificationService.unreadCount() > 1 ? 's' : '' }}
+              </span>
+            }
+          </div>
+          <span class="text-xs font-bold text-white block">System Alerts &amp; Warnings</span>
+          <span class="text-[9px] text-slate-500 leading-none">Review gale advisories, high swells, and announcements</span>
+        </button>
       </div>
 
       <!-- Extra admin option -->
@@ -401,4 +437,120 @@
       <a routerLink="/register" class="text-sm font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 px-4 py-1.8 rounded-xl transition-all shadow-md shadow-cyan-500/10">Sign Up</a>
     </div>
   </header>
+}
+
+<!-- SLIDE-OVER NOTIFICATIONS DRAWER -->
+@if (isNotificationsOpen()) {
+  <div class="fixed inset-0 z-50 overflow-hidden bg-slate-950/60 backdrop-blur-sm transition-opacity" (click)="closeNotificationsPanel()">
+    <div class="fixed inset-y-0 right-0 max-w-full flex pl-10" (click)="$event.stopPropagation()">
+      <div class="w-screen max-w-md bg-slate-950/95 border-l border-slate-850 shadow-2xl flex flex-col justify-between p-6 backdrop-blur-xl">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-850 pb-4 mb-6">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Alerts &amp; warnings</span>
+            @if (notificationService.unreadCount() > 0) {
+              <span class="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[9px] font-bold uppercase tracking-wider">
+                {{ notificationService.unreadCount() }} unread
+              </span>
+            }
+          </div>
+          <button
+            (click)="closeNotificationsPanel()"
+            class="p-2 bg-slate-900/60 border border-slate-800 rounded-lg text-slate-400 hover:text-white focus:outline-none text-xs font-bold transition-all"
+          >
+            ✕ Close
+          </button>
+        </div>
+
+        <!-- Scrollable content area -->
+        <div class="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-none">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-slate-500 uppercase tracking-widest font-extrabold">All Notifications</span>
+            @if (notificationService.unreadCount() > 0) {
+              <button
+                (click)="markAllAsRead()"
+                class="text-[10px] text-cyan-400 font-bold hover:text-cyan-300 transition-colors uppercase tracking-wider"
+              >
+                ✓ Mark all as read
+              </button>
+            }
+          </div>
+
+          <div class="space-y-3 pt-2">
+            @for (note of notificationService.notifications(); track note.id) {
+              <div
+                (click)="markAsRead(note.id)"
+                class="relative p-4 rounded-xl border transition-all cursor-pointer flex items-start space-x-3 select-none"
+                [class.bg-slate-900\/40]="note.read"
+                [class.border-slate-850]="note.read"
+                [class.bg-slate-900\/80]="!note.read"
+                [class.border-cyan-500\/30]="!note.read && note.type === 'alert'"
+                [class.border-amber-500\/30]="!note.read && (note.type === 'warning' || note.type === 'system')"
+                [class.border-slate-800]="!note.read && note.type === 'info'"
+              >
+                <!-- Glowing unread line -->
+                @if (!note.read) {
+                  <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+                    [class.bg-cyan-400]="note.type === 'alert'"
+                    [class.bg-amber-400]="note.type === 'warning' || note.type === 'system'"
+                    [class.bg-slate-500]="note.type === 'info'"
+                  ></span>
+                }
+
+                <!-- Status icon badge -->
+                <div class="h-8 w-8 rounded-lg flex items-center justify-center text-md shrink-0 select-none"
+                  [class.bg-cyan-500\/10]="note.type === 'alert'"
+                  [class.text-cyan-400]="note.type === 'alert'"
+                  [class.bg-amber-500\/10]="note.type === 'warning' || note.type === 'system'"
+                  [class.text-amber-400]="note.type === 'warning' || note.type === 'system'"
+                  [class.bg-slate-800]="note.type === 'info'"
+                  [class.text-slate-400]="note.type === 'info'"
+                >
+                  @if (note.type === 'alert') { 🌊 }
+                  @else if (note.type === 'warning') { 💨 }
+                  @else if (note.type === 'system') { 📢 }
+                  @else { ℹ️ }
+                </div>
+
+                <!-- Text details -->
+                <div class="flex-1 space-y-1">
+                  <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-slate-100 flex items-center">
+                      {{ note.title }}
+                      @if (!note.read) {
+                        <span class="h-1.5 w-1.5 rounded-full bg-cyan-400 ml-2 animate-ping"></span>
+                      }
+                    </h4>
+                    <button
+                      (click)="deleteNotification(note.id, $event)"
+                      class="text-slate-500 hover:text-rose-400 transition-colors text-[10px] p-1 font-bold"
+                      title="Dismiss"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p class="text-[11px] text-slate-400 leading-relaxed font-medium">{{ note.message }}</p>
+                  <span class="text-[9px] text-slate-550 block font-semibold pt-1">{{ note.time | date:'shortTime' }}</span>
+                </div>
+              </div>
+            }
+            @empty {
+              <div class="py-16 text-center text-slate-500">
+                <span class="text-3xl block mb-2">🔕</span>
+                <span class="text-xs font-bold">All clear! No alerts active</span>
+                <p class="text-[10px] text-slate-600 mt-1 max-w-xs mx-auto">Dynamic safety notifications will trigger here based on your saved locations and active forecast bounds.</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Footer quick tip -->
+        <div class="mt-6 border-t border-slate-850 pt-4 text-center">
+          <p class="text-[10px] text-slate-500">Configure your warning parameters in the settings menu.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
 }

@@ -1,4 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject, effect } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from './auth';
 
 export interface UserSettings {
   tempUnit: 'C' | 'F';
@@ -6,18 +8,55 @@ export interface UserSettings {
   waveUnit: 'm' | 'ft';
 }
 
+export interface NotificationPrefs {
+  swellWarnings: boolean;
+  windWarnings: boolean;
+  solunarAlerts: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class SettingsService {
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+
+  // Signals for local preferences
   public settings = signal<UserSettings>({
     tempUnit: 'C',
     windUnit: 'kmh',
     waveUnit: 'm',
   });
 
+  public notificationPrefs = signal<NotificationPrefs>({
+    swellWarnings: true,
+    windWarnings: true,
+    solunarAlerts: true,
+  });
+
   constructor() {
     this.loadSettings();
+
+    // Reactively update settings when auth profile is fetched/changed
+    effect(() => {
+      const user = this.authService.currentUser();
+      if (user) {
+        if (user.unitPrefs) {
+          this.settings.set({
+            tempUnit: user.unitPrefs.tempUnit || 'C',
+            windUnit: user.unitPrefs.windUnit || 'kmh',
+            waveUnit: user.unitPrefs.waveUnit || 'm',
+          });
+        }
+        if (user.preferences) {
+          this.notificationPrefs.set({
+            swellWarnings: user.preferences.swellWarnings !== false,
+            windWarnings: user.preferences.windWarnings !== false,
+            solunarAlerts: user.preferences.solunarAlerts !== false,
+          });
+        }
+      }
+    });
   }
 
   private loadSettings(): void {
@@ -39,20 +78,48 @@ export class SettingsService {
   public setTempUnit(unit: 'C' | 'F'): void {
     this.settings.update(s => ({ ...s, tempUnit: unit }));
     this.saveSettings();
+    this.syncToServer();
   }
 
   public setWindUnit(unit: 'kmh' | 'ms' | 'kt'): void {
     this.settings.update(s => ({ ...s, windUnit: unit }));
     this.saveSettings();
+    this.syncToServer();
   }
 
   public setWaveUnit(unit: 'm' | 'ft'): void {
     this.settings.update(s => ({ ...s, waveUnit: unit }));
     this.saveSettings();
+    this.syncToServer();
+  }
+
+  public toggleNotification(key: keyof NotificationPrefs): void {
+    this.notificationPrefs.update(n => ({ ...n, [key]: !n[key] }));
+    this.syncToServer();
   }
 
   private saveSettings(): void {
     localStorage.setItem('oceancast_settings', JSON.stringify(this.settings()));
+  }
+
+  private syncToServer(): void {
+    if (this.authService.isAuthenticated()) {
+      const payload = {
+        unitPrefs: this.settings(),
+        preferences: this.notificationPrefs(),
+      };
+      this.http.put<any>('/api/auth/profile', payload).subscribe({
+        next: (res) => {
+          if (res.user) {
+            // Silently update user info in AuthService to maintain synchronization
+            this.authService.currentUser.set(res.user);
+          }
+        },
+        error: (err) => {
+          console.error('[Settings] Failed to sync preferences with server:', err);
+        }
+      });
+    }
   }
 
   public formatTemp(celsius: number): string {

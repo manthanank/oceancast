@@ -110,54 +110,8 @@
             </div>
           </div>
 
-          <!-- NOTIFICATION ALERTS PREFERENCES -->
-          <div class="space-y-3 pt-4 border-t border-slate-800/40 select-none">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Personalized Alert Warnings</span>
-            
-            <div class="space-y-2.5">
-              <!-- Swell alerts checkbox -->
-              <div class="flex items-center space-x-3 cursor-pointer" (click)="swellWarnings.set(!swellWarnings())">
-                <input
-                  type="checkbox"
-                  [checked]="swellWarnings()"
-                  class="h-4 w-4 bg-slate-950 border border-slate-800 rounded text-cyan-400 focus:ring-0 focus:ring-offset-0 pointer-events-none"
-                />
-                <div class="text-xs">
-                  <span class="font-bold text-slate-200 block">Enable Marine Swell Alerts</span>
-                  <span class="text-[10px] text-slate-400">Warns you when coastal swell wave heights exceed dynamic surfing minimums.</span>
-                </div>
-              </div>
-
-              <!-- Wind alerts checkbox -->
-              <div class="flex items-center space-x-3 cursor-pointer" (click)="windWarnings.set(!windWarnings())">
-                <input
-                  type="checkbox"
-                  [checked]="windWarnings()"
-                  class="h-4 w-4 bg-slate-950 border border-slate-800 rounded text-cyan-400 focus:ring-0 focus:ring-offset-0 pointer-events-none"
-                />
-                <div class="text-xs">
-                  <span class="font-bold text-slate-200 block">Enable Gale & Crosswind Warnings</span>
-                  <span class="text-[10px] text-slate-400">Alerts you of gusty breezes when planning motorcycle touring index bounds.</span>
-                </div>
-              </div>
-
-              <!-- Solunar alerts checkbox -->
-              <div class="flex items-center space-x-3 cursor-pointer" (click)="solunarAlerts.set(!solunarAlerts())">
-                <input
-                  type="checkbox"
-                  [checked]="solunarAlerts()"
-                  class="h-4 w-4 bg-slate-950 border border-slate-800 rounded text-cyan-400 focus:ring-0 focus:ring-offset-0 pointer-events-none"
-                />
-                <div class="text-xs">
-                  <span class="font-bold text-slate-200 block">Enable Fisherman Feeding Forecasts</span>
-                  <span class="text-[10px] text-slate-400">Highlights solunar peak activity windows during local tide transitions.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- SUBMIT ACTION -->
-          <div class="pt-4 border-t border-slate-800/40">
+          <div class="pt-4">
             <button
               type="submit"
               [disabled]="isSaving() || profileForm.invalid"

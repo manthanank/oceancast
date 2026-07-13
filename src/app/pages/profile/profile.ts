@@ -34,11 +34,6 @@ export class Profile implements OnInit {
   public metrics = signal<any | null>(null);
   public lastLoginAt = signal<string | null>(null);
 
-  // User alert settings choices
-  public swellWarnings = signal<boolean>(true);
-  public windWarnings = signal<boolean>(true);
-  public solunarAlerts = signal<boolean>(true);
-
   // Personal details credentials form
   public profileForm: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -67,10 +62,6 @@ export class Profile implements OnInit {
           email: res.email || '',
         });
 
-        const pref = res.preferences || {};
-        this.swellWarnings.set(pref.swellWarnings !== false);
-        this.windWarnings.set(pref.windWarnings !== false);
-        this.solunarAlerts.set(pref.solunarAlerts !== false);
         this.metrics.set(res.metrics || null);
         this.lastLoginAt.set(res.lastLoginAt || null);
       },
@@ -87,17 +78,12 @@ export class Profile implements OnInit {
     const payload = {
       name: this.profileForm.value.name,
       email: this.profileForm.value.email,
-      preferences: {
-        swellWarnings: this.swellWarnings(),
-        windWarnings: this.windWarnings(),
-        solunarAlerts: this.solunarAlerts(),
-      },
     };
 
     this.http.put<any>('/api/auth/profile', payload).subscribe({
       next: (res) => {
         this.isSaving.set(false);
-        this.toastService.show('Profile saved successfully', 'success');
+        this.toastService.show('Profile details updated successfully', 'success');
         this.authService.setCurrentUser(res.user);
         this.metrics.set(res.metrics || null);
       },
