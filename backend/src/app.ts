@@ -25,37 +25,55 @@ import marineHubRoutes from './routes/marine-hub';
 
 const app = express();
 
+// Enable trust proxy for accurate client IP detection behind Vercel reverse proxy
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
 // CORS configuration
+const envOrigins = (process.env.FRONTEND_URL ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
-  'http://localhost:4200', // Angular default development port
-  'http://localhost:3000', // Alternative local development
-  process.env.FRONTEND_URL, // Deployed production url
-].filter((origin): origin is string => !!origin);
+  'http://localhost:4200',
+  'http://localhost:3000',
+  'https://oceancast.vercel.app',
+  'https://oceancast-app.vercel.app',
+  'https://oceancast-api.vercel.app',
+  ...envOrigins,
+];
+
+const isAllowedOrigin = (origin: string): boolean => {
+  if (allowedOrigins.includes(origin)) return true;
+  if (/^https:\/\/oceancast(-app)?(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
+  return false;
+};
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, Postman, or same-origin)
       if (!origin) {
         callback(null, true);
-      } else if (allowedOrigins.includes(origin)) {
+      } else if (isAllowedOrigin(origin)) {
         callback(null, true);
       } else if (process.env.NODE_ENV === 'development') {
-        // Allow all origins in development mode
         callback(null, true);
       } else {
-        // Block in production if origin not in allowlist
-        callback(new Error('CORS: Origin not allowed'));
+        callback(new Error(`CORS: Origin not allowed — ${origin}`));
       }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 204,
   })
 );
+
+// Explicitly handle OPTIONS preflight for all routes
+app.options('*', cors());
 
 // Rate limiting (for API protection)
 const limiter = rateLimit({

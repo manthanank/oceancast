@@ -1,12 +1,8 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { Catch } from '../models/Catch';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { logEvent } from '../services/audit';
 import { User } from '../models/User';
-
-interface AuthRequest extends Request {
-  userId: string;
-}
 
 const router = Router();
 
@@ -30,7 +26,7 @@ function calculateTideHeightAtTime(latitude: number, longitude: number, catchDat
 }
 
 // GET /api/catches - Retrieve all catches for authenticated user
-router.get('/', authenticateToken as any, async (req: AuthRequest, res: Response): Promise<any> => {
+router.get('/', authenticateToken, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const catches = await Catch.find({ userId: req.userId }).sort({ catchTime: -1 });
     return res.json(catches);
@@ -41,7 +37,7 @@ router.get('/', authenticateToken as any, async (req: AuthRequest, res: Response
 });
 
 // POST /api/catches - Log a new catch record
-router.post('/', authenticateToken as any, async (req: AuthRequest, res: Response): Promise<any> => {
+router.post('/', authenticateToken, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const { species, weight, length, locationName, lat, lon, catchTime, notes } = req.body;
 
@@ -118,7 +114,7 @@ router.post('/', authenticateToken as any, async (req: AuthRequest, res: Respons
 });
 
 // DELETE /api/catches/:id - Delete a catch record
-router.delete('/:id', authenticateToken as any, async (req: AuthRequest, res: Response): Promise<any> => {
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const catchRecord = await Catch.findOneAndDelete({ _id: req.params.id, userId: req.userId });
     if (!catchRecord) {

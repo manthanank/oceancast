@@ -3,12 +3,13 @@ import { fetchWeatherData } from '../utils/weatherHelper';
 import { fetchMarineData } from '../utils/marineHelper';
 import { getTideData } from '../utils/tideHelper';
 import { GeminiService } from '../services/gemini';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 const geminiService = new GeminiService();
 
-// Context-aware AI Chat endpoint
-router.post('/chat', async (req: Request, res: Response): Promise<any> => {
+// Context-aware AI Chat endpoint (Protected)
+router.post('/chat', authenticateToken, async (req: Request, res: Response): Promise<any> => {
   try {
     const { message, lat, lon } = req.body;
 
@@ -68,8 +69,8 @@ router.post('/chat', async (req: Request, res: Response): Promise<any> => {
   }
 });
 
-// POST /api/ai/angler-report - Generate a structured daily angler briefing
-router.post('/angler-report', async (req: Request, res: Response): Promise<any> => {
+// POST /api/ai/angler-report - Generate a structured daily angler briefing (Protected)
+router.post('/angler-report', authenticateToken, async (req: Request, res: Response): Promise<any> => {
   try {
     const { locationName, lat, lon } = req.body;
 

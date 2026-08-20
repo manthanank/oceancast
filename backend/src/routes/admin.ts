@@ -1,15 +1,15 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { User } from '../models/User';
 import { Setting } from '../models/Setting';
 import { Location } from '../models/Location';
 import { AuditLog } from '../models/AuditLog';
 import { logEvent } from '../services/audit';
-import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
 // GET /api/admin/users - Retrieve list of all users (Admin only)
-router.get('/users', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.get('/users', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const users = await User.find({}).select('-password').sort({ createdAt: -1 });
     return res.json(users);
@@ -20,7 +20,7 @@ router.get('/users', authenticateToken as any, requireAdmin as any, async (req, 
 });
 
 // PUT /api/admin/users/:id/role - Promote/demote user tiers (Admin only)
-router.put('/users/:id/role', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.put('/users/:id/role', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const { role } = req.body;
     if (!['standard', 'admin'].includes(role)) {
@@ -56,7 +56,7 @@ router.put('/users/:id/role', authenticateToken as any, requireAdmin as any, asy
 });
 
 // DELETE /api/admin/users/:id - Delete user account and locations (Admin only)
-router.delete('/users/:id', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.delete('/users/:id', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const userId = req.params.id;
     if (userId === req.userId) {
@@ -83,7 +83,7 @@ router.delete('/users/:id', authenticateToken as any, requireAdmin as any, async
 });
 
 // GET /api/admin/stats - Retrieve system aggregations (Admin only)
-router.get('/stats', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.get('/stats', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const userCount = await User.countDocuments({});
     const locationCount = await Location.countDocuments({});
@@ -102,7 +102,7 @@ router.get('/stats', authenticateToken as any, requireAdmin as any, async (req, 
 });
 
 // GET /api/admin/prompt - Fetch custom Gemini system instructions (Admin only)
-router.get('/prompt', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.get('/prompt', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     let promptSetting = await Setting.findOne({ key: 'gemini_system_prompt' });
     if (!promptSetting) {
@@ -118,7 +118,7 @@ router.get('/prompt', authenticateToken as any, requireAdmin as any, async (req,
 });
 
 // PUT /api/admin/prompt - Update custom Gemini system instructions (Admin only)
-router.put('/prompt', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.put('/prompt', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const { prompt } = req.body;
     if (!prompt || prompt.trim() === '') {
@@ -147,7 +147,7 @@ router.put('/prompt', authenticateToken as any, requireAdmin as any, async (req,
 });
 
 // GET /api/admin/presets - Fetch featured locations (Public/Authenticated)
-router.get('/presets', authenticateToken as any, async (req, res) => {
+router.get('/presets', authenticateToken, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const presetsSetting = await Setting.findOne({ key: 'featured_presets' });
     return res.json(presetsSetting ? presetsSetting.value : []);
@@ -158,7 +158,7 @@ router.get('/presets', authenticateToken as any, async (req, res) => {
 });
 
 // POST /api/admin/presets - Add a featured location preset (Admin only)
-router.post('/presets', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.post('/presets', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const { name, lat, lon } = req.body;
     if (!name || lat === undefined || lon === undefined) {
@@ -187,7 +187,7 @@ router.post('/presets', authenticateToken as any, requireAdmin as any, async (re
 });
 
 // DELETE /api/admin/presets/:index - Delete a featured location preset (Admin only)
-router.delete('/presets/:index', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.delete('/presets/:index', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const index = Number(req.params.index);
     let presetsSetting = await Setting.findOne({ key: 'featured_presets' });
@@ -215,7 +215,7 @@ router.delete('/presets/:index', authenticateToken as any, requireAdmin as any, 
 });
 
 // GET /api/admin/audit-logs - Fetch latest 20 security logs (Admin only)
-router.get('/audit-logs', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.get('/audit-logs', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const logs = await AuditLog.find({}).sort({ createdAt: -1 }).limit(20);
     return res.json(logs);
@@ -237,7 +237,7 @@ router.get('/announcement', async (req, res) => {
 });
 
 // PUT /api/admin/announcement - Modify broadcast banner setting (Admin only)
-router.put('/announcement', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.put('/announcement', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const { text, active } = req.body;
     let annSetting = await Setting.findOne({ key: 'announcement' });
@@ -280,7 +280,7 @@ router.get('/thresholds', async (req, res) => {
 });
 
 // PUT /api/admin/thresholds - Update custom suitability parameters (Admin only)
-router.put('/thresholds', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.put('/thresholds', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const { surf, ride, fish } = req.body;
     let thSetting = await Setting.findOne({ key: 'activity_thresholds' });
@@ -307,7 +307,7 @@ router.put('/thresholds', authenticateToken as any, requireAdmin as any, async (
 });
 
 // GET /api/admin/backup - Download settings database backups (Admin only)
-router.get('/backup', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.get('/backup', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const presetsSetting = await Setting.findOne({ key: 'featured_presets' });
     const promptSetting = await Setting.findOne({ key: 'gemini_system_prompt' });
@@ -332,7 +332,7 @@ router.get('/backup', authenticateToken as any, requireAdmin as any, async (req,
 });
 
 // POST /api/admin/restore - Restore settings database state (Admin only)
-router.post('/restore', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.post('/restore', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     const { featured_presets, gemini_system_prompt, announcement, activity_thresholds } = req.body;
     
@@ -360,7 +360,7 @@ router.post('/restore', authenticateToken as any, requireAdmin as any, async (re
 });
 
 // GET /api/admin/map-data - All saved locations with user info for admin map (Admin only)
-router.get('/map-data', authenticateToken as any, requireAdmin as any, async (req, res) => {
+router.get('/map-data', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
     // Fetch all locations with user name lookup
     const locations = await Location.find({}).lean();

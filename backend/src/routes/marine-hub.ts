@@ -66,7 +66,7 @@ router.get('/', async (req: Request, res: Response): Promise<any> => {
     const windSpeed = weather?.current?.windSpeed ?? 12.0;
     const windDir = weather?.current?.windDirection ?? 180;
     const waveHeight = marine?.current?.waveHeight ?? 0.8;
-    const temp = weather?.current?.temperature ?? 22.0;
+    const temp = weather?.current?.temp ?? 22.0;
     const cloudCover = weather?.current?.cloudCover ?? 30; // default 30%
 
     // 1. COASTAL FLOODING & TIDES CALCULATIONS

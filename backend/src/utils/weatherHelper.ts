@@ -7,6 +7,7 @@ export interface WeatherData {
     windDirection: number;
     humidity: number;
     weatherCode: number;
+    cloudCover: number;
     time: string;
   };
   daily: Array<{
@@ -32,7 +33,7 @@ export const fetchWeatherData = async (latitude: number, longitude: number): Pro
   const cached = apiCache.get<WeatherData>(cacheKey);
   if (cached) return cached;
 
-  const openMeteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum&timezone=auto`;
+  const openMeteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,cloud_cover&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum&timezone=auto`;
 
   try {
     const apiResponse = await fetch(openMeteoUrl);
@@ -53,6 +54,7 @@ export const fetchWeatherData = async (latitude: number, longitude: number): Pro
         windDirection: data.current.wind_direction_10m,
         humidity: data.current.relative_humidity_2m,
         weatherCode: data.current.weather_code,
+        cloudCover: data.current.cloud_cover ?? 20,
         time: data.current.time,
       },
       daily: data.daily.time.map((date: string, idx: number) => ({
@@ -120,6 +122,7 @@ function getLandLockedWeatherData(): WeatherData {
       windDirection: 180,
       humidity: 60,
       weatherCode: 1,
+      cloudCover: 20,
       time: now.toISOString().slice(0, 16),
     },
     daily,
